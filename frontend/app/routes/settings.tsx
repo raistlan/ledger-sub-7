@@ -212,7 +212,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
               userSelect: "none",
             }}
           >
-            <span>{DAYS[weekStart]}</span>
+            <span>{DAYS[weekStart].toUpperCase()}</span>
             <span style={{ color: C.textMuted, fontSize: 18 }}>▼</span>
           </div>
 
@@ -258,7 +258,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
                       idx === weekStart ? "#1a1a2e" : "transparent";
                   }}
                 >
-                  {day}
+                  {day.toUpperCase()}
                 </div>
               ))}
             </div>

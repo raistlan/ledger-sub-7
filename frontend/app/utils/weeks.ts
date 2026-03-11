@@ -26,7 +26,20 @@ export function getDaysLeft(today: Date, startDay: WeekStartDay = 0): number {
 }
 
 export function formatWeekLabel(start: Date): string {
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
   return `WK OF ${months[start.getMonth()]} ${String(start.getDate()).padStart(2, "0")}`;
 }
 

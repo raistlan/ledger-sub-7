@@ -503,10 +503,6 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                       <button
                         key={key}
                         onMouseDown={(e) => e.preventDefault()} // prevent focus steal
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          handleKey(key);
-                        }}
                         onClick={() => handleKey(key)}
                         style={{
                           ...raisedBorder(false),
@@ -520,6 +516,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                           userSelect: "none",
                           outline: "none",
                           letterSpacing: "0.05em",
+                          touchAction: "none",
                         }}
                       >
                         {key === "BS" ? "DEL" : key}
@@ -632,8 +629,8 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
           }}
         >
           {[
-            { label: "Reports", path: "/reports" },
-            { label: "Settings", path: "/settings" },
+            { label: "REPORTS", path: "/reports" },
+            { label: "SETTINGS", path: "/settings" },
           ].map((item) => (
             <div
               key={item.label}
@@ -680,7 +677,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                 "transparent";
             }}
           >
-            Log Out
+            LOG OUT
           </div>
         </div>
       )}

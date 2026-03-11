@@ -11,6 +11,7 @@ Design a mobile-first PWA called **L₇ (Ledger Sub 7)**. Generate all screens a
 **Mood:** Utilitarian, slightly austere. This is a tool, not a lifestyle app. It should feel like something a programmer built for themselves.
 
 **Key visual characteristics:**
+
 - All surfaces use flat, solid colors — no gradients in UI chrome, no glassmorphism, no blur, no drop shadows
 - Borders are hard 1px lines. Interactive panels (buttons, input fields, cards) use a **raised/sunken inset border effect**: lighter edge on top-left, darker edge on bottom-right — exactly like Windows 95 buttons and dialog boxes
 - Buttons in their pressed/active state reverse the inset effect (sunken: dark top-left, light bottom-right)
@@ -78,10 +79,12 @@ This is the most important screen. It has three vertical sections stacked top to
 Full-width panel at the top. Contains:
 
 **Left side:**
+
 - Budget figure in large monospace: e.g. `$145.50 / $200.00`
 - Below that, smaller: `72%  •  3 DAYS LEFT`
 
 **Right side:**
+
 - Kebab menu icon `⋮` — tappable, opens a dropdown
 
 **Below the text, spanning full width:**
@@ -94,6 +97,7 @@ The pip progress bar (see below).
 A horizontal row of **20 equally-sized rectangular pips** with small gaps between them, spanning the full width of the header.
 
 **Normal state (0–100% of budget spent):**
+
 - Pips fill left to right. Each pip represents 5% of the budget.
 - Filled pips are colored according to their position:
   - Pips 1–10: Green (healthy)
@@ -103,6 +107,7 @@ A horizontal row of **20 equally-sized rectangular pips** with small gaps betwee
 - Example state to render: 14 pips filled (70% spent), pips 15–20 dark
 
 **Over-budget state (>100% spent) — render as a separate component variant:**
+
 - All 20 pips are filled
 - Color flows left to right: pale flat red → dark red → dark gray
 - The dark gray endpoint must remain visually distinct from the background — not pure black
@@ -118,12 +123,14 @@ The pips should look chunky and segmented — like a terminal VU meter or a retr
 A scrollable list of expense/credit entries for the current week. Entries are ordered oldest at top, most recent at bottom — like a calculator tape or terminal output.
 
 **Each entry row contains:**
+
 - Amount (large, left-aligned, monospace): e.g. `$23.50`
 - Memo text if present (smaller, muted, same row or line below): e.g. `coffee`
 - Date (small, muted, right-aligned): e.g. `MON 03`
 - Credit entries: amount shown in cyan accent color, with a small `[CR]` label
 
 **Entry selected state (render as a variant):**
+
 - Row background inverts or gets a highlight border to show selection
 - Two action buttons slide in from the right edge of the row: `[ EDIT ]` and `[ DEL ]`
 - Both buttons use the raised Win95 border style
@@ -156,6 +163,7 @@ Fixed panel anchored to the bottom of the screen. Never scrolls.
 - Buttons should be large — minimum 48px tall, filling available width
 
 **Memo state (render as a separate variant of this section):**
+
 - The keypad is hidden / slid out of view
 - In its place: a text input field (sunken/inset border style), auto-focused, with the native keyboard implied below
 - Above the text field: the memo label (`MEMO:`) and the current expression amount so the user knows what they're adding a memo to
@@ -230,13 +238,13 @@ Render as floating modal dialog boxes in the center of the screen, overlaying th
 
 - Title bar: `ATTENTION`
 - Body: `Amount has more than 2 decimal places.` followed by the amount on its own line in large monospace, e.g. `$23.771`
-- Buttons: `[ CANCEL ]`  `[ ROUND DOWN  $23.77 ]`  `[ ROUND UP  $23.78 ]`
+- Buttons: `[ CANCEL ]` `[ ROUND DOWN  $23.77 ]` `[ ROUND UP  $23.78 ]`
 
 **Dialog: Negative Result**
 
 - Title bar: `ATTENTION`
 - Body: `Result is negative.` followed by the amount on its own line in large monospace, e.g. `-$5.00`
-- Buttons: `[ CANCEL ]`  `[ MAKE POSITIVE  $5.00 ]`  `[ ADD AS CREDIT ]`
+- Buttons: `[ CANCEL ]` `[ MAKE POSITIVE  $5.00 ]` `[ ADD AS CREDIT ]`
 
 ---
 
@@ -245,6 +253,7 @@ Render as floating modal dialog boxes in the center of the screen, overlaying th
 Render as a floating context menu panel anchored to the top-right corner, overlaying the Home Screen. Style like a Win95 right-click context menu: hard border, dark background, list of items separated by thin dividers.
 
 Items:
+
 1. `Reports`
 2. `Settings`
 3. `---` (divider)
