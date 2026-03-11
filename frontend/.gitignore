@@ -1,7 +1,24 @@
-.DS_Store
-.env
+# Dependencies
 /node_modules/
 
-# React Router
-/.react-router/
+# Build output
 /build/
+/dist/
+
+# React Router generated types
+/.react-router/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+/coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db

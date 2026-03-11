@@ -1,15 +1,82 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  margin: 0;
+  padding: 0;
+  color-scheme: dark;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+/* ── Layout shell ────────────────────────────────────────────── */
+
+.app-outer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #008080;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.08) 0px,
+    rgba(0, 0, 0, 0.08) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Desktop ambient grid — hidden on mobile */
+.desktop-bg {
+  display: none;
+}
+
+/* Title bar + status bar — hidden on mobile */
+.desktop-chrome {
+  display: none;
+  flex-shrink: 0;
+}
+
+.app-panel {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ── Desktop breakpoint ──────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  .app-outer {
+    padding: 40px;
+  }
+
+  .desktop-chrome {
+    display: flex;
+    align-items: center;
+  }
+
+  .app-panel {
+    max-width: 480px;
+    height: min(1080px, calc(100vh - 80px));
+    box-shadow:
+      0 0 60px rgba(0, 0, 120, 0.15),
+      0 0 0 2px #3a3a3a;
+    border-style: solid;
+    border-width: 2px;
+    border-top-color: #9a9a9a;
+    border-left-color: #9a9a9a;
+    border-bottom-color: #3a3a3a;
+    border-right-color: #3a3a3a;
   }
 }
