@@ -26,7 +26,8 @@ class EntryCreate(BaseModel):
             raise ValueError("amount must be positive")
         if v > Decimal("999999.99"):
             raise ValueError("amount cannot exceed 999999.99")
-        if v.as_tuple().exponent < -2:
+        exp = v.as_tuple().exponent
+        if not isinstance(exp, int) or exp < -2:
             raise ValueError("amount cannot have more than 2 decimal places")
         return v
 
@@ -46,9 +47,11 @@ class EntryUpdate(BaseModel):
             raise ValueError("amount must be positive")
         if v > Decimal("999999.99"):
             raise ValueError("amount cannot exceed 999999.99")
-        if v.as_tuple().exponent < -2:
+        exp = v.as_tuple().exponent
+        if not isinstance(exp, int) or exp < -2:
             raise ValueError("amount cannot have more than 2 decimal places")
         return v
+
 
 router = APIRouter(prefix="/api/v1/entries", tags=["entries"])
 
