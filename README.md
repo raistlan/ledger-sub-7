@@ -1,4 +1,8 @@
-# L₇ Ledger Sub 7
+<p align="center">
+  <img src="frontend/public/icons/icon-192.png" alt="Ledger Sub 7 Logo" />
+</p>
+
+# Ledger Sub 7
 
 A retro Win95-styled weekly budget tracker. Track expenses and credits, visualize your weekly spend with a pip bar, and review historical reports.
 
