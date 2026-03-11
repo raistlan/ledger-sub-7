@@ -522,7 +522,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                           letterSpacing: "0.05em",
                         }}
                       >
-                        {key === "BS" ? "⌫" : key}
+                        {key === "BS" ? "DEL" : key}
                       </button>
                     );
                   })}

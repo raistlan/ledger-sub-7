@@ -12,7 +12,14 @@ interface EntryRowProps {
   selectable?: boolean;
 }
 
-export function EntryRow({ entry, selected, onSelect, onEdit, onDelete, selectable = false }: EntryRowProps) {
+export function EntryRow({
+  entry,
+  selected,
+  onSelect,
+  onEdit,
+  onDelete,
+  selectable = false,
+}: EntryRowProps) {
   const isCredit = entry.type === "credit";
 
   return (
@@ -21,10 +28,16 @@ export function EntryRow({ entry, selected, onSelect, onEdit, onDelete, selectab
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "7px 12px",
+        padding: "0 12px",
+        height: 58,
+        boxSizing: "border-box",
         backgroundColor: selected ? C.surfaceAlt : "transparent",
-        borderTop: selected ? `1px solid ${C.borderMid}` : "1px solid transparent",
-        borderBottom: selected ? `1px solid ${C.borderMid}` : "1px solid transparent",
+        borderTop: selected
+          ? `1px solid ${C.borderMid}`
+          : "1px solid transparent",
+        borderBottom: selected
+          ? `1px solid ${C.borderMid}`
+          : "1px solid transparent",
         cursor: selectable ? "pointer" : "default",
         gap: 8,
         fontFamily: font,
@@ -93,7 +106,11 @@ export function EntryRow({ entry, selected, onSelect, onEdit, onDelete, selectab
 }
 
 /** Read-only entry row for reports (no selection/edit/delete) */
-export function ReportEntryRow({ entry }: { entry: { amount: number; type: string; memo: string | null; date: string } }) {
+export function ReportEntryRow({
+  entry,
+}: {
+  entry: { amount: number; type: string; memo: string | null; date: string };
+}) {
   const isCredit = entry.type === "credit";
   return (
     <div
@@ -106,7 +123,14 @@ export function ReportEntryRow({ entry }: { entry: { amount: number; type: strin
         fontFamily: font,
       }}
     >
-      <div style={{ color: isCredit ? C.cyan : C.text, fontSize: 24, minWidth: 105, flexShrink: 0 }}>
+      <div
+        style={{
+          color: isCredit ? C.cyan : C.text,
+          fontSize: 24,
+          minWidth: 105,
+          flexShrink: 0,
+        }}
+      >
         {isCredit ? "+" : "−"}${fmt(entry.amount)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -131,7 +155,9 @@ export function ReportEntryRow({ entry }: { entry: { amount: number; type: strin
         )}
         <span style={{ color: C.textMuted, fontSize: 17 }}>{entry.memo}</span>
       </div>
-      <div style={{ color: C.textDim, fontSize: 15, flexShrink: 0 }}>{entry.date}</div>
+      <div style={{ color: C.textDim, fontSize: 15, flexShrink: 0 }}>
+        {entry.date}
+      </div>
     </div>
   );
 }
