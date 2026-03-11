@@ -53,11 +53,6 @@ export function EntryRow({
           flexShrink: 0,
         }}
       >
-        {isCredit ? "+" : "−"}${fmt(entry.amount)}
-      </div>
-
-      {/* Memo + CR label */}
-      <div style={{ flex: 1, minWidth: 0 }}>
         {isCredit && (
           <span
             style={{
@@ -65,13 +60,18 @@ export function EntryRow({
               color: C.cyan,
               fontSize: 13,
               padding: "1px 4px",
-              marginRight: 5,
+              marginRight: 8,
               verticalAlign: "middle",
             }}
           >
             CR
           </span>
         )}
+        {isCredit ? "+" : "−"}${fmt(entry.amount)}
+      </div>
+
+      {/* Memo */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         {entry.memo && (
           <span style={{ color: C.textMuted, fontSize: 18 }}>{entry.memo}</span>
         )}
@@ -131,9 +131,6 @@ export function ReportEntryRow({
           flexShrink: 0,
         }}
       >
-        {isCredit ? "+" : "−"}${fmt(entry.amount)}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
         {isCredit && (
           <span
             style={{
@@ -141,7 +138,7 @@ export function ReportEntryRow({
               color: C.cyan,
               fontSize: 13,
               padding: "1px 4px",
-              marginRight: 5,
+              marginRight: 8,
               borderWidth: 1,
               borderStyle: "solid",
               borderTopColor: C.borderLight,
@@ -153,6 +150,9 @@ export function ReportEntryRow({
             CR
           </span>
         )}
+        {isCredit ? "+" : "−"}${fmt(entry.amount)}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{ color: C.textMuted, fontSize: 17 }}>{entry.memo}</span>
       </div>
       <div style={{ color: C.textDim, fontSize: 15, flexShrink: 0 }}>

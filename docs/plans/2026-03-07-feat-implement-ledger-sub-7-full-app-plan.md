@@ -61,6 +61,7 @@ The frontend UI design (Win95 aesthetic, all screen components) already exists a
 ## Problem Statement
 
 The project currently has:
+
 - A comprehensive PLANNING.md and PORTING_PLAN.md
 - A stub backend (`GET /hello` only, `requirements.txt` with just fastapi + uvicorn)
 - A stub frontend (default React Router scaffold, no real routes)
@@ -90,6 +91,7 @@ PostgreSQL (Railway addon)
 ```
 
 Auth flow:
+
 1. Frontend initiates Google OAuth redirect (with random `state` param stored in cookie)
 2. Google redirects back with `?code=&state=`
 3. Login route loader validates `state`, POSTs code to `/api/v1/auth/google`
@@ -241,6 +243,7 @@ class Entry(Base):
 ```
 
 **Research insights:**
+
 - `lazy="raise"` on all relationships surfaces N+1 issues at test time, not production
 - Use `NUMERIC(12, 2)` not `FLOAT` — floating point arithmetic is not exact for money
 - `UUID(as_uuid=True)` from `sqlalchemy.dialects.postgresql` uses PostgreSQL native `uuid` column type, not `CHAR(32)`
@@ -404,11 +407,11 @@ async def upsert_user_and_budget(db: AsyncSession, google_sub: str, email: str, 
 
 **JWT cookie settings** (resolve before implementation):
 
-| Scenario | SameSite | Secure | domain |
-|---|---|---|---|
-| Custom domains (recommended) | `lax` | `True` | `.yourdomain.com` |
-| `up.railway.app` (no custom domain) | `none` | `True` | omit (PSL blocks cross-service sharing) |
-| Localhost dev | `lax` | `False` | omit |
+| Scenario                            | SameSite | Secure  | domain                                  |
+| ----------------------------------- | -------- | ------- | --------------------------------------- |
+| Custom domains (recommended)        | `lax`    | `True`  | `.yourdomain.com`                       |
+| `up.railway.app` (no custom domain) | `none`   | `True`  | omit (PSL blocks cross-service sharing) |
+| Localhost dev                       | `lax`    | `False` | omit                                    |
 
 **Research insight:** `up.railway.app` is on the Public Suffix List. Setting `domain=.up.railway.app` is rejected by browsers — `frontend.up.railway.app` and `backend.up.railway.app` are treated as separate registrable domains. **Use custom domains** (e.g., `app.yourdomain.com` + `api.yourdomain.com`) to enable `SameSite=Lax`. Without custom domains, you must use `SameSite=None; Secure` plus explicit CORS with `allow_credentials=True`.
 
@@ -439,6 +442,7 @@ async def get_current_user(
 ```
 
 **Research insights:**
+
 - Always pass `algorithms=["HS256"]` to `jwt.decode()` — without it, the `alg: none` attack is possible
 - Use `google-auth` + `cachecontrol` for token verification (caches Google's JWKS so it's not re-fetched per request)
 - Key the user on `idinfo["sub"]` not `idinfo["email"]` — `sub` is an immutable Google account identifier; emails can be changed
@@ -497,18 +501,49 @@ def health():
 
 ```typescript
 export type UUID = string;
-export type ISODate = string;  // "YYYY-MM-DD"
+export type ISODate = string; // "YYYY-MM-DD"
 export type EntryType = "expense" | "credit";
-export type WeekStartDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;  // literal union, not number
+export type WeekStartDay = 0 | 1 | 2 | 3 | 4 | 5 | 6; // literal union, not number
 
-export interface User { id: UUID; email: string; name: string; week_start_day: WeekStartDay; }
-export interface Budget { id: UUID; name: string; weekly_amount: number; }
-export interface Entry { id: UUID; budget_id: UUID; amount: number; type: EntryType; memo: string | null; date: ISODate; }
-export interface Pagination { limit: number; offset: number; total_count: number; }
-export interface ListResponse<T> { data: T[]; pagination: Pagination; }
-export interface SingleResponse<T> { data: T; }
-export interface ApiError { code: string; message: string; details: Array<{field: string; reason: string}>; }
-export interface ErrorResponse { error: ApiError; }
+export interface User {
+  id: UUID;
+  email: string;
+  name: string;
+  week_start_day: WeekStartDay;
+}
+export interface Budget {
+  id: UUID;
+  name: string;
+  weekly_amount: number;
+}
+export interface Entry {
+  id: UUID;
+  budget_id: UUID;
+  amount: number;
+  type: EntryType;
+  memo: string | null;
+  date: ISODate;
+}
+export interface Pagination {
+  limit: number;
+  offset: number;
+  total_count: number;
+}
+export interface ListResponse<T> {
+  data: T[];
+  pagination: Pagination;
+}
+export interface SingleResponse<T> {
+  data: T;
+}
+export interface ApiError {
+  code: string;
+  message: string;
+  details: Array<{ field: string; reason: string }>;
+}
+export interface ErrorResponse {
+  error: ApiError;
+}
 ```
 
 **`frontend/app/utils/api.ts`** — discriminated union result type:
@@ -518,17 +553,20 @@ type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: ApiError };
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiResult<T>> {
   const res = await fetch(`/api/v1${path}`, {
     ...init,
-    credentials: "include",  // browser-side; SSR loaders forward Cookie header manually
+    credentials: "include", // browser-side; SSR loaders forward Cookie header manually
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   if (res.ok) {
-    const body = await res.json() as { data: T };
+    const body = (await res.json()) as { data: T };
     return { ok: true, data: body.data };
   }
-  const body = await res.json() as ErrorResponse;
+  const body = (await res.json()) as ErrorResponse;
   return { ok: false, status: res.status, error: body.error };
 }
 ```
@@ -544,7 +582,7 @@ import type { User } from "~/types/api";
 // Call from SSR loaders — forwards Cookie header from browser request
 export async function requireUser(request: Request): Promise<User> {
   const res = await fetch(`${process.env.BACKEND_URL}/api/v1/auth/me`, {
-    headers: { Cookie: request.headers.get("Cookie") ?? "" },  // CRITICAL: manual forwarding
+    headers: { Cookie: request.headers.get("Cookie") ?? "" }, // CRITICAL: manual forwarding
   });
   if (!res.ok) throw redirect("/login");
   const body = await res.json();
@@ -560,7 +598,7 @@ export async function requireUser(request: Request): Promise<User> {
 import type { WeekStartDay } from "~/types/api";
 
 export function getWeekStart(d: Date, startDay: WeekStartDay = 0): Date {
-  const dayIndex = d.getDay();  // 0=Sunday (matches Python's current_day_index)
+  const dayIndex = d.getDay(); // 0=Sunday (matches Python's current_day_index)
   // +7 is REQUIRED: JS % does NOT return non-negative for negative inputs (unlike Python %)
   const daysSinceStart = (dayIndex - startDay + 7) % 7;
   const result = new Date(d);
@@ -578,11 +616,26 @@ export function getWeekEnd(d: Date, startDay: WeekStartDay = 0): Date {
 export function getDaysLeft(today: Date, startDay: WeekStartDay = 0): number {
   // Accepts date as parameter — do NOT call new Date() internally (SSR returns UTC, not local)
   const weekEnd = getWeekEnd(today, startDay);
-  return Math.ceil((weekEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil(
+    (weekEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
 }
 
 export function formatWeekLabel(start: Date): string {
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
   return `WK OF ${months[start.getMonth()]} ${String(start.getDate()).padStart(2, "0")}`;
 }
 ```
@@ -598,7 +651,8 @@ import { evaluate } from "mathjs";
 export function evalExpression(input: string): number | null {
   try {
     const result = evaluate(input);
-    if (typeof result !== "number" || !isFinite(result) || result < 0) return null;
+    if (typeof result !== "number" || !isFinite(result) || result < 0)
+      return null;
     return result;
   } catch {
     return null;
@@ -640,7 +694,10 @@ export class ApiClient {
 
   async get<T>(path: string): Promise<T> {
     const res = await fetch(`${API_BASE}/api/v1${path}`, {
-      headers: { Cookie: this.cookieHeader, "Content-Type": "application/json" },
+      headers: {
+        Cookie: this.cookieHeader,
+        "Content-Type": "application/json",
+      },
     });
     if (res.status === 401) throw redirect("/login");
     if (!res.ok) throw data(await res.json(), { status: res.status });
@@ -668,6 +725,7 @@ export default [
 ```
 
 **Update `frontend/app/root.tsx`**:
+
 - Import `fonts.css`
 - Add CRT overlay once at root (position:fixed, pointer-events:none, aria-hidden="true", z-index:9999)
 - Desktop layout: teal `#008080` background (canonical Win95 desktop color), centered max-450px panel with Win95 `outerBorder`
@@ -683,10 +741,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const api = new ApiClient(request.headers.get("Cookie") ?? "");
   try {
     await api.get("/auth/me");
-    throw redirect("/");  // already authed
+    throw redirect("/"); // already authed
   } catch (e) {
     if (e instanceof Response && e.status === 302) throw e;
-    return {};  // not authed — show login
+    return {}; // not authed — show login
   }
 }
 ```
@@ -734,7 +792,10 @@ const [showPartialCents, setShowPartialCents] = useState(false);
 // CORRECT: symbol enum with frozen value snapshot
 type DialogPhase = "none" | "negative" | "partial_cents";
 const [dialogPhase, setDialogPhase] = useState<DialogPhase>("none");
-const [pendingEntry, setPendingEntry] = useState<{amount: number; type: EntryType} | null>(null);
+const [pendingEntry, setPendingEntry] = useState<{
+  amount: number;
+  type: EntryType;
+} | null>(null);
 
 // On submit: evaluate → if negative → set pendingEntry + setDialogPhase("negative")
 //            → if partial cents → set pendingEntry + setDialogPhase("partial_cents")
@@ -754,7 +815,7 @@ if (isSubmitting) return;
 **Race condition: logout**:
 
 ```typescript
-const isLoggingOut = useRef(false);  // useRef not useState — ref is synchronous
+const isLoggingOut = useRef(false); // useRef not useState — ref is synchronous
 const handleLogout = () => {
   if (isLoggingOut.current) return;
   isLoggingOut.current = true;
@@ -815,8 +876,8 @@ useEffect(() => {
   "background_color": "#008080",
   "theme_color": "#000080",
   "icons": [
-    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
 ```
@@ -870,12 +931,14 @@ frontend/app/
 ### Interaction Graph
 
 Entry creation chain:
+
 1. HomeScreen `commitEntry()` → evaluates expression → snapshot into `pendingEntry` → show dialog if needed → POST form action
 2. React Router action → `ApiClient.post("/entries", {...})` → Cookie header forwarded → FastAPI
 3. FastAPI: cookie → `get_current_user` → resolve `budget_id` server-side → `CHECK (amount > 0)` enforced by DB → INSERT Entry
 4. React Router revalidates home loader → parallel re-fetch entries + budget → UI updates
 
 Auth chain:
+
 1. `getWeekStart()` (frontend) generates login URL with random `state` → stored in cookie
 2. Google redirect → POST code + state to `/api/v1/auth/google`
 3. Backend validates state → exchanges code → verifies ID token (aud, iss, exp, sub) → upserts User+Budget in SAVEPOINT transaction → issues JWT in httpOnly cookie
@@ -899,6 +962,7 @@ Auth chain:
 ### API Surface Parity
 
 `week_start_day` algorithm used in 3 places — all must be identical:
+
 1. `backend/app/utils/week.py` `get_week_start()` (reports grouping, boundary queries)
 2. `frontend/app/utils/weeks.ts` `getWeekStart()` (home entry filter params, days-left calculation)
 3. Frontend `formatWeekLabel()` (status bar display)
@@ -921,7 +985,7 @@ Test parity: both backend and frontend tests must cover all 49 combinations.
 
 - [ ] Google OAuth login/logout works end-to-end with state parameter CSRF protection
 - [ ] JWT cookie: httpOnly, Secure, explicit SameSite, HS256 pinned
-- [ ] Calculator input: +, -, *, / all work (including division — bug fixed)
+- [ ] Calculator input: +, -, \*, / all work (including division — bug fixed)
 - [ ] Negative result dialog with correct options; uses frozen `pendingEntry` not live input
 - [ ] Partial cents dialog with round up/down/cancel
 - [ ] No double-submit possible (guarded by navigation.state)
@@ -1044,7 +1108,7 @@ backend/
 frontend/
   public/
     manifest.json                     <- L7 branding, #000080 theme
-    fonts/VT323.woff2                 <- self-hosted
+    fonts/VT323-Regular.ttf           <- self-hosted
     icons/icon-192.png icon-512.png   <- Win95-aesthetic L7 logo
   app/
     root.tsx                          <- teal desktop bg, CRT overlay, max-450px panel

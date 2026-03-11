@@ -16,13 +16,16 @@ import { C, font, raisedBorder, sunkenBorder, crtOverlay } from "~/utils/win95";
 
 export const links: Route.LinksFunction = () => [
   { rel: "manifest", href: "/manifest.json" },
+  { rel: "icon", href: "/public/icons/icon-192.png" },
 ];
 
 function getWeekLabel() {
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay()); // back to Sunday
-  const month = weekStart.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const month = weekStart
+    .toLocaleString("en-US", { month: "short" })
+    .toUpperCase();
   const day = String(weekStart.getDate()).padStart(2, "0");
   return `WK OF ${month} ${day}`;
 }
@@ -37,14 +40,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body style={{ margin: 0, fontFamily: font }}>
+      <body style={{ margin: 0, fontFamily: font, fontSize: 20 }}>
         <div className="app-outer">
           {/* Ambient desktop grid — desktop only */}
           <div className="desktop-bg" aria-hidden="true" />
 
           {/* Win95 application window */}
           <div className="app-panel" style={{ backgroundColor: C.bg }}>
-
             {/* Title bar — desktop only */}
             <div
               className="desktop-chrome"
@@ -56,10 +58,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 userSelect: "none",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 14 }}>💹</span>
-                <span style={{ color: "#ffffff", fontFamily: font, fontSize: 18, letterSpacing: "0.06em" }}>
-                  L₇ - LEDGER SUB 7
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <img
+                  src="/public/icons/icon-512.png"
+                  alt="L₇ Logo"
+                  width={24}
+                  height={24}
+                />
+                <span
+                  style={{
+                    color: "#ffffff",
+                    fontFamily: font,
+                    fontSize: 18,
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  LEDGER SUB 7
                 </span>
               </div>
               <div style={{ display: "flex", gap: 2 }}>
@@ -89,7 +103,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Content area — fills remaining height */}
             <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
               {/* CRT scanline overlay */}
-              <div style={{ ...crtOverlay, position: "fixed", zIndex: 9999 }} aria-hidden="true" />
+              <div
+                style={{ ...crtOverlay, position: "fixed", zIndex: 9999 }}
+                aria-hidden="true"
+              />
               {children}
             </div>
 
@@ -103,10 +120,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 gap: 12,
               }}
             >
-              <div style={{ flex: 1, ...sunkenBorder, padding: "1px 6px", color: C.textMuted, fontFamily: font, fontSize: 14 }}>
+              <div
+                style={{
+                  flex: 1,
+                  ...sunkenBorder,
+                  padding: "1px 6px",
+                  color: C.textMuted,
+                  fontFamily: font,
+                  fontSize: 14,
+                }}
+              >
                 READY
               </div>
-              <div style={{ ...sunkenBorder, padding: "1px 6px", color: C.textMuted, fontFamily: font, fontSize: 14, minWidth: 120, textAlign: "center" }}>
+              <div
+                style={{
+                  ...sunkenBorder,
+                  padding: "1px 6px",
+                  color: C.textMuted,
+                  fontFamily: font,
+                  fontSize: 14,
+                  minWidth: 120,
+                  textAlign: "center",
+                }}
+              >
                 {getWeekLabel()}
               </div>
             </div>

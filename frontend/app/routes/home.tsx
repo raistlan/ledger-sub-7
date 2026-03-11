@@ -23,7 +23,7 @@ import type { Entry, Budget, User } from "~/types/api";
 export { SessionExpiredBoundary as ErrorBoundary } from "~/components/SessionExpiredBoundary";
 
 export function meta() {
-  return [{ title: "L₇ — Weekly Budget" }];
+  return [{ title: "Ledger Sub 7" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
