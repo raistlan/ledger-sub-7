@@ -98,7 +98,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
             color: C.text,
             fontFamily: font,
             fontSize: 18,
-            padding: "3px 8px",
+            padding: "3px 12px",
             cursor: "pointer",
             outline: "none",
           }}
@@ -106,7 +106,7 @@ export default function SettingsPage({ loaderData }: Route.ComponentProps) {
           ◄
         </button>
         <span
-          style={{ color: "#ffffff", fontSize: 20, letterSpacing: "0.06em" }}
+          style={{ color: "#ffffff", fontSize: 24, letterSpacing: "0.06em" }}
         >
           SETTINGS
         </span>

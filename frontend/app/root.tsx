@@ -16,7 +16,7 @@ import { C, font, raisedBorder, sunkenBorder, crtOverlay } from "~/utils/win95";
 
 export const links: Route.LinksFunction = () => [
   { rel: "manifest", href: "/manifest.json" },
-  { rel: "icon", href: "/public/icons/icon-192.png" },
+  { rel: "icon", href: "/icons/icon-192.png" },
 ];
 
 function getWeekLabel() {
@@ -60,7 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <img
-                  src="/public/icons/icon-512.png"
+                  src="/icons/icon-512.png"
                   alt="L₇ Logo"
                   width={24}
                   height={24}

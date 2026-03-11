@@ -70,7 +70,7 @@ export interface WeekSummary {
 export interface ReportSummary {
   total_spent: number;
   total_credits: number;
-  net: number;
+  net_spent: number;
   start: ISODate;
   end: ISODate;
   entries?: ReportEntry[];

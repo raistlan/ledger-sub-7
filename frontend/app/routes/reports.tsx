@@ -163,7 +163,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
             color: C.text,
             fontFamily: font,
             fontSize: 18,
-            padding: "3px 8px",
+            padding: "3px 12px",
             cursor: "pointer",
             outline: "none",
           }}
@@ -171,7 +171,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
           ◄
         </button>
         <span
-          style={{ color: "#ffffff", fontSize: 20, letterSpacing: "0.06em" }}
+          style={{ color: "#ffffff", fontSize: 24, letterSpacing: "0.06em" }}
         >
           REPORTS
         </span>
@@ -189,9 +189,10 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
         <div
           style={{
             display: "flex",
-            gap: 6,
+            gap: 10,
             overflowX: "auto",
             paddingBottom: 2,
+            justifyContent: "space-evenly",
           }}
         >
           {ranges.map((r) => (
@@ -203,6 +204,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
                 fontSize: 15,
                 padding: "5px 10px",
                 whiteSpace: "nowrap",
+                flex: 1,
               }}
             >
               {r}
@@ -211,7 +213,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
           <W95Btn
             active={showMoreDropdown}
             onClick={() => setShowMoreDropdown((d) => !d)}
-            style={{ fontSize: 15, padding: "5px 10px" }}
+            style={{ fontSize: 15, padding: "5px 10px", flex: 1 }}
           >
             MORE...
           </W95Btn>
@@ -286,7 +288,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
             val: `$${fmt(activeSummary.total_credits)}`,
             color: C.cyan,
           },
-          { label: "NET", val: `$${fmt(activeSummary.net)}` },
+          { label: "NET", val: `$${fmt(activeSummary.net_spent)}` },
         ].map((row) => (
           <div
             key={row.label}
