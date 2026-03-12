@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -157,6 +158,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    function setLocalDateCookie() {
+      if (document.visibilityState !== "visible") return;
+      const d = new Date();
+      const iso = [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, "0"),
+        String(d.getDate()).padStart(2, "0"),
+      ].join("-");
+      document.cookie = `localDate=${iso}; path=/; SameSite=Lax`;
+    }
+
+    setLocalDateCookie(); // set on mount (covers every page load / new tab)
+    document.addEventListener("visibilitychange", setLocalDateCookie);
+    return () => document.removeEventListener("visibilitychange", setLocalDateCookie);
+  }, []);
+
   return <Outlet />;
 }
 

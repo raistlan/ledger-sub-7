@@ -11,6 +11,14 @@ function extractCookie(cookieStr: string, name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+export function getLocalDateFromCookie(cookieStr: string): Date {
+  const dateStr = extractCookie(cookieStr, "localDate");
+  if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + "T12:00:00");
+  }
+  return new Date(); // fallback: server UTC (only on very first SSR before hydration)
+}
+
 export class ApiClient {
   private headers: Record<string, string>;
 

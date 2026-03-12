@@ -3,7 +3,7 @@ import { C, font, raisedBorder } from "~/utils/win95";
 import { fmt } from "~/utils/fmt";
 import { W95Btn } from "~/components/W95Btn";
 
-function DialogOverlay({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) {
+export function DialogOverlay({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Focus trap and Escape key
@@ -36,7 +36,7 @@ function DialogOverlay({ children, onClose }: { children: React.ReactNode; onClo
   );
 }
 
-function DialogBox({
+export function DialogBox({
   title,
   children,
   buttons,

@@ -6,7 +6,8 @@ import { fmt } from "~/utils/fmt";
 import { getWeekStart, getWeekEnd, toISODate } from "~/utils/weeks";
 import { ReportEntryRow } from "~/components/EntryRow";
 import { W95Btn } from "~/components/W95Btn";
-import { ApiClient } from "~/lib/api.server";
+import { ApiClient, getLocalDateFromCookie } from "~/lib/api.server";
+import { useLocalToday } from "~/hooks/useLocalToday";
 import type { User, Budget, ReportSummary, WeekStartDay } from "~/types/api";
 
 export function meta() {
@@ -14,7 +15,8 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const api = new ApiClient(request.headers.get("Cookie") ?? "");
+  const cookie = request.headers.get("Cookie") ?? "";
+  const api = new ApiClient(cookie);
   const params = new URL(request.url).searchParams;
   const hasExplicitRange = params.has("start") && params.has("end");
 
@@ -27,12 +29,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     return {
       user: meResult,
       summary: summaryResult,
-      today: toISODate(new Date()),
     };
   }
 
   // Sequential: need me first to compute default range
-  const today = new Date();
+  const today = getLocalDateFromCookie(cookie);
   const user = await api.get<User>("/auth/me");
 
   const weekStart = getWeekStart(today, user.week_start_day);
@@ -47,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const summary = await api.get<ReportSummary>(summaryPath);
 
-  return { user, summary, today: toISODate(today) };
+  return { user, summary };
 }
 
 type Range =
@@ -97,7 +98,7 @@ function computeRange(
 }
 
 export default function ReportsPage({ loaderData }: Route.ComponentProps) {
-  const { user, summary, today } = loaderData;
+  const { user, summary } = loaderData;
   const navigate = useNavigate();
 
   // useFetcher for range changes prevents out-of-order response race
@@ -106,7 +107,8 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
 
   const activeSummary = fetcher.data?.summary ?? summary;
-  const todayDate = new Date(today + "T12:00:00");
+  const localToday = useLocalToday();
+  const todayDate = new Date(localToday + "T12:00:00");
 
   function handleRangeChange(newRange: Range) {
     setRange(newRange);

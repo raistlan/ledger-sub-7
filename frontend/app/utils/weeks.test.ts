@@ -1,4 +1,4 @@
-import { getWeekStart, getWeekEnd, getDaysLeft } from "./weeks";
+import { getWeekStart, getWeekEnd, getDaysLeft, toISODate } from "./weeks";
 import type { WeekStartDay } from "~/types/api";
 
 /**
@@ -100,6 +100,24 @@ describe("getWeekEnd", () => {
         expect(delta).toBe(6);
       }
     }
+  });
+});
+
+describe("toISODate", () => {
+  it("formats as YYYY-MM-DD", () => {
+    const date = new Date(2026, 0, 5, 12, 0, 0); // Jan 5, noon local
+    expect(toISODate(date)).toBe("2026-01-05");
+  });
+
+  it("uses LOCAL date components, not UTC", () => {
+    // A date object created with local constructor preserves local date
+    const date = new Date(2026, 2, 11, 23, 0, 0); // Mar 11, 11 PM local
+    expect(toISODate(date)).toBe("2026-03-11"); // not UTC's next day
+  });
+
+  it("pads single-digit months and days", () => {
+    const date = new Date(2026, 0, 9, 12, 0, 0); // Jan 9
+    expect(toISODate(date)).toBe("2026-01-09");
   });
 });
 

@@ -18,7 +18,10 @@ import {
   NegativeResultDialog,
 } from "~/components/W95Dialog";
 import { W95Btn } from "~/components/W95Btn";
-import { ApiClient } from "~/lib/api.server";
+import { EditEntryDialog } from "~/components/EditEntryDialog";
+import { useEditEntryDialog } from "~/hooks/useEditEntryDialog";
+import { ApiClient, getLocalDateFromCookie } from "~/lib/api.server";
+import { useLocalToday } from "~/hooks/useLocalToday";
 import type { Entry, Budget, User } from "~/types/api";
 export { SessionExpiredBoundary as ErrorBoundary } from "~/components/SessionExpiredBoundary";
 
@@ -27,8 +30,9 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const api = new ApiClient(request.headers.get("Cookie") ?? "");
-  const today = new Date();
+  const cookie = request.headers.get("Cookie") ?? "";
+  const api = new ApiClient(cookie);
+  const today = getLocalDateFromCookie(cookie);
   const user = await api.get<User>("/auth/me");
   const weekStart = getWeekStart(today, user.week_start_day);
   const weekEnd = getWeekEnd(today, user.week_start_day);
@@ -94,7 +98,7 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: false };
 }
 
-type DialogPhase = "none" | "negative" | "partial_cents";
+type DialogPhase = "none" | "negative" | "partial_cents" | "edit";
 
 interface PendingEntry {
   amount: number;
@@ -124,6 +128,11 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
 
   // Selection state
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Edit entry dialog
+  const editDialog = useEditEntryDialog();
+
+  const localToday = useLocalToday();
 
   // Kebab menu
   const [showKebab, setShowKebab] = useState(false);
@@ -192,7 +201,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
     if (key === "MEMO") {
       if (!display.trim()) return;
       const result = evalExpression(display);
-      if (result !== null && result !== 0) {
+      if (result !== null && result > 0) {
         setPendingExpr(display);
         setShowMemo(true);
       }
@@ -212,7 +221,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
         amount: result,
         type: entryType,
         memo: "",
-        date: today,
+        date: localToday,
       };
 
       if (result < 0) {
@@ -289,6 +298,17 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
       amount: Math.abs(pendingEntry.amount),
       type: "credit",
     });
+  }
+
+  function handleEditCancel() {
+    editDialog.close();
+    setDialogPhase("none");
+  }
+
+  function handleEditSave(updates: { amount: number; type: "expense" | "credit"; memo: string }) {
+    editDialog.save(updates);
+    setDialogPhase("none");
+    setSelectedId(null);
   }
 
   function handleLogout() {
@@ -405,6 +425,10 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                 onSelect={() =>
                   setSelectedId((id) => (id === entry.id ? null : entry.id))
                 }
+                onEdit={() => {
+                  editDialog.open(entry);
+                  setDialogPhase("edit");
+                }}
                 onDelete={() => {
                   const form = new FormData();
                   form.set("intent", "delete");
@@ -558,7 +582,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                       amount: result,
                       type: entryType,
                       memo: memoText,
-                      date: today,
+                      date: localToday,
                     });
                   }
                 }
@@ -596,7 +620,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                       amount: result,
                       type: entryType,
                       memo: memoText,
-                      date: today,
+                      date: localToday,
                     });
                   }
                 }}
@@ -697,6 +721,13 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
           onCancel={handleDialogCancel}
           onMakePositive={handleMakePositive}
           onAddAsCredit={handleAddAsCredit}
+        />
+      )}
+      {dialogPhase === "edit" && editDialog.editingEntry && (
+        <EditEntryDialog
+          entry={editDialog.editingEntry}
+          onCancel={handleEditCancel}
+          onSave={handleEditSave}
         />
       )}
     </div>

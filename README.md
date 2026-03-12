@@ -4,13 +4,17 @@
 
 # Ledger Sub 7
 
-A retro Win95-styled weekly budget tracker. Track expenses and credits, visualize your weekly spend with a pip bar, and review historical reports.
+A retro Win95-styled weekly budget tracker. Log expenses and credits, watch a pip bar fill up, and review historical spend reports — all in a dark-mode, monospace aesthetic.
 
 ## Stack
 
-- **Backend**: FastAPI + SQLAlchemy (asyncio) + PostgreSQL + Alembic
-- **Frontend**: React Router v7 (SSR) + Vite + TypeScript
-- **Auth**: Google OAuth 2.0 + JWT cookies
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React Router v7 (SSR) + Vite + TypeScript |
+| Styling | TailwindCSS v4 + custom Win95 theme (`win95.ts`) |
+| Backend | FastAPI + SQLAlchemy (asyncio) + Alembic |
+| Database | PostgreSQL 16 |
+| Auth | Google OAuth 2.0 + JWT cookies |
 
 ## Prerequisites
 
@@ -19,25 +23,17 @@ A retro Win95-styled weekly budget tracker. Track expenses and credits, visualiz
 - Docker (for local PostgreSQL)
 - A Google Cloud project with OAuth 2.0 credentials
 
-## Setup
+## Local Setup
 
-### 1. Clone and checkout
-
-```bash
-git clone git@github.com:raistlan/ledger-sub-7.git
-cd ledger-sub-7
-git checkout worktree-compound-one-shot
-```
-
-### 2. Start the database
+### 1. Start the database
 
 ```bash
 docker compose up -d
 ```
 
-This starts a PostgreSQL 16 instance on `localhost:5432` with database `l7_dev`. Data persists in a Docker volume across restarts.
+Starts a PostgreSQL 16 instance. Host port is **5433**, container port is 5432. Data persists in a Docker volume across restarts.
 
-### 3. Configure the backend
+### 2. Configure the backend
 
 ```bash
 cd backend
@@ -49,7 +45,7 @@ pip install -r requirements.txt
 Create `backend/.env`:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/l7_dev
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/l7_dev
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/auth/callback
@@ -59,22 +55,17 @@ FRONTEND_URL=http://localhost:5173
 ENVIRONMENT=development
 ```
 
-Run migrations:
+Run migrations and start the server:
 
 ```bash
 alembic upgrade head
-```
-
-Start the backend:
-
-```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Configure the frontend
+### 3. Configure the frontend
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
@@ -84,7 +75,7 @@ Create `frontend/.env`:
 BACKEND_URL=http://localhost:8000
 ```
 
-Start the frontend:
+Start the dev server:
 
 ```bash
 npm run dev
@@ -107,10 +98,10 @@ The app is now running at **http://localhost:5173**.
 cd backend
 source .venv/bin/activate
 
-# Create a test database (requires Docker to be running)
+# Create the test database (requires Docker to be running)
 docker exec $(docker compose ps -q db) createdb -U postgres l7_test
 
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/l7_test pytest
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/l7_test pytest
 ```
 
 ### Frontend
@@ -120,14 +111,14 @@ cd frontend
 npm test
 ```
 
-## Deploying to Railway
+## Deployment (Railway)
 
-Railway works out of the box — the backend reads all config from environment variables.
+Railway reads all config from environment variables and works with both sub-directories.
 
 1. Create a new Railway project
-2. Add a **PostgreSQL** plugin — Railway automatically sets `DATABASE_URL`
-3. Deploy the `backend/` directory; Railway will detect the `Dockerfile`
-4. Set these environment variables in Railway:
+2. Add a **PostgreSQL** plugin — Railway sets `DATABASE_URL` automatically
+3. Deploy `backend/` as a service; Railway detects the `Dockerfile`
+4. Set these environment variables on the backend service:
    ```
    GOOGLE_CLIENT_ID=...
    GOOGLE_CLIENT_SECRET=...
@@ -136,39 +127,38 @@ Railway works out of the box — the backend reads all config from environment v
    FRONTEND_URL=https://your-frontend.railway.app
    ENVIRONMENT=production
    ```
-5. After deploy, run migrations once via Railway's shell:
-   ```bash
-   alembic upgrade head
-   ```
-6. Deploy the `frontend/` directory as a separate Railway service, setting:
+5. Run migrations once via Railway's shell: `alembic upgrade head`
+6. Deploy `frontend/` as a separate service with:
    ```
    BACKEND_URL=https://your-backend.railway.app
    ```
 
-> **Note:** Update the Google OAuth redirect URI in Google Cloud Console to match your Railway backend URL.
+Update the Google OAuth redirect URI in Google Cloud Console to match your Railway backend URL.
 
 ## Project Structure
 
 ```
 ledger-sub-7/
-├── backend/
+├── docker-compose.yml       # Local PostgreSQL (host port 5433)
+├── docs/                    # Planning docs and design notes
+├── backend/                 # FastAPI application → see backend/README.md
 │   ├── app/
-│   │   ├── main.py          # FastAPI app entry point
-│   │   ├── config.py        # Settings (reads .env)
-│   │   ├── models.py        # SQLAlchemy models
+│   │   ├── main.py          # Entry point, middleware, router registration
+│   │   ├── config.py        # Settings (reads .env via pydantic-settings)
+│   │   ├── models.py        # SQLAlchemy ORM models
 │   │   ├── dependencies.py  # Auth dependency (get_current_user)
-│   │   └── routers/
-│   │       ├── auth.py      # Google OAuth + /me
-│   │       ├── entries.py   # Expense/credit CRUD
-│   │       ├── budget.py    # Weekly budget
-│   │       └── reports.py   # Summary reports
+│   │   ├── limiter.py       # Rate limiting (slowapi)
+│   │   └── routers/         # auth, entries, budget, reports
+│   ├── modules/             # Domain logic (entry, account, user)
 │   ├── alembic/             # Database migrations
-│   ├── tests/               # pytest test suite
+│   ├── tests/               # pytest async test suite
 │   └── requirements.txt
-└── frontend/
-    ├── app/
-    │   ├── routes/          # home, login, logout, settings, reports
-    │   ├── components/      # PipBar, W95Btn, W95Dialog, EntryRow
-    │   └── utils/           # calculator, fmt, weeks, win95 theme
-    └── package.json
+└── frontend/                # React Router v7 app → see frontend/README.md
+    └── app/
+        ├── routes/          # home, login, logout, settings, reports
+        ├── components/      # UI components (W95Dialog, EntryRow, PipBar, …)
+        ├── hooks/           # Custom React hooks (e.g. useEditEntryDialog)
+        ├── lib/             # Server-side API client
+        ├── types/           # Shared TypeScript types
+        └── utils/           # Pure utilities (calculator, fmt, weeks, win95)
 ```
