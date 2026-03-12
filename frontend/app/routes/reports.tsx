@@ -191,7 +191,7 @@ export default function ReportsPage({ loaderData }: Route.ComponentProps) {
         <div
           style={{
             display: "flex",
-            gap: 10,
+            gap: 9,
             overflowX: "auto",
             paddingBottom: 2,
             justifyContent: "space-evenly",
