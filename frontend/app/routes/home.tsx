@@ -1,5 +1,6 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useNavigation, useNavigate, useSubmit } from "react-router";
+import { Await } from "react-router";
 import type { Route } from "./+types/home";
 import { C, font, raisedBorder, sunkenBorder } from "~/utils/win95";
 import { fmt } from "~/utils/fmt";
@@ -33,22 +34,24 @@ export async function loader({ request }: Route.LoaderArgs) {
   const cookie = request.headers.get("Cookie") ?? "";
   const api = new ApiClient(cookie);
   const today = getLocalDateFromCookie(cookie);
-  const user = await api.get<User>("/auth/me");
-  const weekStart = getWeekStart(today, user.week_start_day);
-  const weekEnd = getWeekEnd(today, user.week_start_day);
 
-  const [entries, budget] = await Promise.all([
-    api.get<Entry[]>(
-      `/entries?start=${toISODate(weekStart)}&end=${toISODate(weekEnd)}&limit=200`,
-    ),
+  // Parallel: user and budget don't depend on each other
+  const [user, budget] = await Promise.all([
+    api.get<User>("/auth/me"),
     api.get<Budget>("/budget"),
   ]);
 
+  const weekStart = getWeekStart(today, user.week_start_day);
+  const weekEnd = getWeekEnd(today, user.week_start_day);
+
+  // Return entries as an unresolved Promise — RR v7 streams it via <Await>
   return {
-    entries,
-    budget,
     user,
+    budget,
     today: toISODate(today),
+    entries: api.get<Entry[]>(
+      `/entries?start=${toISODate(weekStart)}&end=${toISODate(weekEnd)}&limit=200`,
+    ),
   };
 }
 
@@ -107,8 +110,237 @@ interface PendingEntry {
   date: string;
 }
 
+// ── HomeEntriesSkeleton ──────────────────────────────────────────────────────
+
+const headerStyle = {
+  backgroundColor: C.surface,
+  borderBottom: `2px solid ${C.borderDark}`,
+  padding: "10px 12px 8px",
+  flexShrink: 0,
+} as const;
+
+export function HomeEntriesSkeleton({
+  budget,
+  user,
+  localToday,
+}: {
+  budget: Budget;
+  user: User;
+  localToday: string;
+}) {
+  const daysLeft = getDaysLeft(
+    new Date(localToday + "T12:00:00"),
+    user.week_start_day,
+  );
+
+  return (
+    <>
+      <div style={headerStyle}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <div>
+            <div style={{ color: C.text, fontSize: 30, lineHeight: 1.1 }}>
+              $---.--
+              <span style={{ color: C.textMuted, fontSize: 22 }}>
+                {" "}
+                / ${fmt(budget.weekly_amount)}
+              </span>
+            </div>
+            <div style={{ color: C.textMuted, fontSize: 17, marginTop: 2 }}>
+              <span>--%</span>
+              {"  •  "}
+              <span>{daysLeft} DAYS LEFT</span>
+            </div>
+          </div>
+          {/* Kebab placeholder — rendered by parent */}
+        </div>
+        <PipBar percentage={0} overBudget={false} />
+      </div>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ color: C.textDim, fontSize: 18 }}>LOADING...</div>
+      </div>
+    </>
+  );
+}
+
+// ── HomeEntriesSection ───────────────────────────────────────────────────────
+
+export function HomeEntriesSection({
+  entries,
+  budget,
+  user,
+  localToday,
+  selectedId,
+  onSelect,
+  onEditOpen,
+  onDelete,
+}: {
+  entries: Entry[];
+  budget: Budget;
+  user: User;
+  localToday: string;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onEditOpen: (entry: Entry) => void;
+  onDelete: (entryId: string) => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Clear selectedId when revalidation removes the entry
+  useEffect(() => {
+    if (selectedId && !entries.find((e) => e.id === selectedId)) {
+      onSelect(null);
+    }
+  }, [entries, selectedId, onSelect]);
+
+  // Auto-scroll entry list to bottom
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [entries]);
+
+  const todayDate = new Date(localToday + "T12:00:00");
+  const daysLeft = getDaysLeft(todayDate, user.week_start_day);
+
+  const spent = entries
+    .filter((e) => e.type === "expense")
+    .reduce((s, e) => s + e.amount, 0);
+  const credits = entries
+    .filter((e) => e.type === "credit")
+    .reduce((s, e) => s + e.amount, 0);
+  const net = spent - credits;
+  const pct =
+    budget.weekly_amount > 0
+      ? Math.round((net / budget.weekly_amount) * 100)
+      : 0;
+  const overBudget = net > budget.weekly_amount;
+
+  const entriesWithLabels = useMemo(
+    () =>
+      entries.map((e) => ({
+        ...e,
+        dateLabel: formatDayLabel(new Date(e.date + "T12:00:00")),
+      })),
+    [entries],
+  );
+
+  return (
+    <>
+      {/* ── HEADER ── */}
+      <div style={headerStyle}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <div>
+            <div style={{ color: C.text, fontSize: 30, lineHeight: 1.1 }}>
+              ${fmt(net)}
+              <span style={{ color: C.textMuted, fontSize: 22 }}>
+                {" "}
+                / ${fmt(budget.weekly_amount)}
+              </span>
+            </div>
+            <div style={{ color: C.textMuted, fontSize: 17, marginTop: 2 }}>
+              <span style={{ color: overBudget ? "#cc4444" : C.text }}>
+                {overBudget ? "OVER" : `${pct}%`}
+              </span>
+              {"  •  "}
+              <span>{daysLeft} DAYS LEFT</span>
+            </div>
+          </div>
+          {/* Kebab button rendered by parent — slot reserved */}
+        </div>
+        <PipBar percentage={pct} overBudget={overBudget} />
+      </div>
+
+      {/* ── ENTRY LIST ── */}
+      <div
+        ref={listRef}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100%",
+            padding: "4px 0",
+          }}
+        >
+          <div style={{ flex: 1 }} />
+          {entriesWithLabels.map((entry, idx) => {
+          const prevDate = idx > 0 ? entriesWithLabels[idx - 1].date : null;
+          const showSep = prevDate && prevDate !== entry.date;
+
+          return (
+            <Fragment key={entry.id}>
+              {showSep && (
+                <div
+                  style={{
+                    borderTop: `1px solid ${C.borderDark}`,
+                    margin: "2px 0",
+                  }}
+                />
+              )}
+              <EntryRow
+                entry={entry}
+                selected={selectedId === entry.id}
+                onSelect={() =>
+                  onSelect(selectedId === entry.id ? null : entry.id)
+                }
+                onEdit={() => onEditOpen(entry)}
+                onDelete={() => onDelete(entry.id)}
+                selectable
+              />
+            </Fragment>
+          );
+        })}
+
+          {entries.length === 0 && (
+            <div
+              style={{
+                color: C.textDim,
+                fontSize: 18,
+                padding: "20px 12px",
+                textAlign: "center",
+              }}
+            >
+              NO ENTRIES THIS WEEK
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── HomePage ─────────────────────────────────────────────────────────────────
+
 export default function HomePage({ loaderData }: Route.ComponentProps) {
-  const { entries, budget, user, today } = loaderData;
+  const { budget, user, today } = loaderData;
+  // RR v7 defer types may not reflect Promise<> — cast to be safe
+  const entriesDeferred = loaderData.entries as unknown as Promise<Entry[]>;
+
   const navigation = useNavigation();
   const navigate = useNavigate();
   const submit = useSubmit();
@@ -137,22 +369,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
   // Kebab menu
   const [showKebab, setShowKebab] = useState(false);
 
-  const listRef = useRef<HTMLDivElement>(null);
   const memoRef = useRef<HTMLInputElement>(null);
-
-  // Clear selectedId when revalidation removes the entry
-  useEffect(() => {
-    if (selectedId && !entries.find((e) => e.id === selectedId)) {
-      setSelectedId(null);
-    }
-  }, [entries, selectedId]);
-
-  // Auto-scroll entry list to bottom
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [entries]);
 
   // Auto-focus memo input
   useEffect(() => {
@@ -160,34 +377,6 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
       memoRef.current.focus();
     }
   }, [showMemo]);
-
-  // Compute display values
-  const todayDate = new Date(today + "T12:00:00");
-  const weekStart = getWeekStart(todayDate, user.week_start_day);
-  const daysLeft = getDaysLeft(todayDate, user.week_start_day);
-
-  const spent = entries
-    .filter((e) => e.type === "expense")
-    .reduce((s, e) => s + e.amount, 0);
-  const credits = entries
-    .filter((e) => e.type === "credit")
-    .reduce((s, e) => s + e.amount, 0);
-  const net = spent - credits;
-  const pct =
-    budget.weekly_amount > 0
-      ? Math.round((net / budget.weekly_amount) * 100)
-      : 0;
-  const overBudget = net > budget.weekly_amount;
-
-  // Build date labels for entry list (memoized to avoid re-computing on every keypad press)
-  const entriesWithLabels = useMemo(
-    () =>
-      entries.map((e) => ({
-        ...e,
-        dateLabel: formatDayLabel(new Date(e.date + "T12:00:00")),
-      })),
-    [entries],
-  );
 
   function handleKey(key: string) {
     if (showMemo) return;
@@ -305,7 +494,11 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
     setDialogPhase("none");
   }
 
-  function handleEditSave(updates: { amount: number; type: "expense" | "credit"; memo: string }) {
+  function handleEditSave(updates: {
+    amount: number;
+    type: "expense" | "credit";
+    memo: string;
+  }) {
     editDialog.save(updates);
     setDialogPhase("none");
     setSelectedId(null);
@@ -338,122 +531,63 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
       }}
       onClick={() => showKebab && setShowKebab(false)}
     >
-      {/* ── HEADER ── */}
-      <div
+      {/* ── HEADER + ENTRY LIST (deferred) ── */}
+      <Suspense
+        fallback={
+          <HomeEntriesSkeleton
+            budget={budget}
+            user={user}
+            localToday={localToday}
+          />
+        }
+      >
+        <Await resolve={entriesDeferred}>
+          {(entries: Entry[]) => (
+            <HomeEntriesSection
+              entries={entries}
+              budget={budget}
+              user={user}
+              localToday={localToday}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onEditOpen={(entry) => {
+                editDialog.open(entry);
+                setDialogPhase("edit");
+              }}
+              onDelete={(entryId) => {
+                const form = new FormData();
+                form.set("intent", "delete");
+                form.set("entryId", entryId);
+                submit(form, { method: "post" });
+              }}
+            />
+          )}
+        </Await>
+      </Suspense>
+
+      {/* ── KEBAB MENU BUTTON (always visible, overlaid on header) ── */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowKebab((k) => !k);
+        }}
         style={{
-          backgroundColor: C.surface,
-          borderBottom: `2px solid ${C.borderDark}`,
-          padding: "10px 12px 8px",
-          flexShrink: 0,
+          position: "absolute",
+          top: 12,
+          right: 12,
+          background: "none",
+          border: "none",
+          color: C.textMuted,
+          fontSize: 26,
+          cursor: "pointer",
+          padding: "2px 6px",
+          fontFamily: font,
+          lineHeight: 1,
+          zIndex: 10,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <div style={{ color: C.text, fontSize: 30, lineHeight: 1.1 }}>
-              ${fmt(net)}
-              <span style={{ color: C.textMuted, fontSize: 22 }}>
-                {" "}
-                / ${fmt(budget.weekly_amount)}
-              </span>
-            </div>
-            <div style={{ color: C.textMuted, fontSize: 17, marginTop: 2 }}>
-              <span style={{ color: overBudget ? "#cc4444" : C.text }}>
-                {overBudget ? "OVER" : `${pct}%`}
-              </span>
-              {"  •  "}
-              <span>{daysLeft} DAYS LEFT</span>
-            </div>
-          </div>
-          {/* Kebab menu button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowKebab((k) => !k);
-            }}
-            style={{
-              background: "none",
-              border: "none",
-              color: C.textMuted,
-              fontSize: 26,
-              cursor: "pointer",
-              padding: "2px 6px",
-              fontFamily: font,
-              lineHeight: 1,
-              marginTop: 2,
-            }}
-          >
-            ⋮
-          </button>
-        </div>
-        <PipBar percentage={pct} overBudget={overBudget} />
-      </div>
-
-      {/* ── ENTRY LIST ── */}
-      <div
-        ref={listRef}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          padding: "4px 0",
-          minHeight: 0,
-        }}
-      >
-        {entriesWithLabels.map((entry, idx) => {
-          const prevDate = idx > 0 ? entriesWithLabels[idx - 1].date : null;
-          const showSep = prevDate && prevDate !== entry.date;
-
-          return (
-            <Fragment key={entry.id}>
-              {showSep && (
-                <div
-                  style={{
-                    borderTop: `1px solid ${C.borderDark}`,
-                    margin: "2px 0",
-                  }}
-                />
-              )}
-              <EntryRow
-                entry={entry}
-                selected={selectedId === entry.id}
-                onSelect={() =>
-                  setSelectedId((id) => (id === entry.id ? null : entry.id))
-                }
-                onEdit={() => {
-                  editDialog.open(entry);
-                  setDialogPhase("edit");
-                }}
-                onDelete={() => {
-                  const form = new FormData();
-                  form.set("intent", "delete");
-                  form.set("entryId", entry.id);
-                  submit(form, { method: "post" });
-                }}
-                selectable
-              />
-            </Fragment>
-          );
-        })}
-
-        {entries.length === 0 && (
-          <div
-            style={{
-              color: C.textDim,
-              fontSize: 18,
-              padding: "20px 12px",
-              textAlign: "center",
-            }}
-          >
-            NO ENTRIES THIS WEEK
-          </div>
-        )}
-      </div>
+        ⋮
+      </button>
 
       {/* ── CALCULATOR ── */}
       <div
@@ -506,7 +640,6 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                 whiteSpace: "nowrap",
                 minHeight: 48,
               }}
-              // inputMode="none" prevents soft keyboard on mobile
               inputMode="none"
             >
               {display || "0"}
@@ -526,7 +659,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
                     return (
                       <button
                         key={key}
-                        onMouseDown={(e) => e.preventDefault()} // prevent focus steal
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleKey(key)}
                         style={{
                           ...raisedBorder(false),

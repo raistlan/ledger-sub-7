@@ -93,7 +93,7 @@ async def list_entries(
     if end:
         stmt = stmt.where(Entry.date <= end)
 
-    stmt = stmt.order_by(Entry.date.asc(), Entry.id.asc())
+    stmt = stmt.order_by(Entry.date.asc(), Entry.created_at.asc())
 
     # Count total
     count_stmt = select(func.count()).select_from(stmt.subquery())

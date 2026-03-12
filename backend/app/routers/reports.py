@@ -42,7 +42,7 @@ async def get_summary(
             Entry.date >= start,
             Entry.date <= end,
         )
-        .order_by(Entry.date.asc(), Entry.id.asc())
+        .order_by(Entry.date.asc(), Entry.created_at.asc())
     )
 
     result = await db.execute(stmt)
