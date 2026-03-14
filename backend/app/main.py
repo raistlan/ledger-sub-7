@@ -34,7 +34,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
     _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
     # Logout CSRF is low-severity (attacker can only force a sign-out, not steal data).
     # Exempting it avoids a chicken-and-egg problem for sessions that predate the csrf_token cookie.
-    _EXEMPT_PATHS = {"/api/v1/auth/logout"}
+    # exchange is server-to-server (frontend SSR → backend); no browser session to protect
+    _EXEMPT_PATHS = {"/api/v1/auth/logout", "/api/v1/auth/exchange"}
 
     async def dispatch(self, request: StarletteRequest, call_next):
         if request.method not in self._SAFE_METHODS and request.url.path not in self._EXEMPT_PATHS:

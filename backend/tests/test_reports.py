@@ -44,7 +44,7 @@ async def test_reports_end_before_start_rejected(client: AsyncClient, db_session
         cookies=_auth_cookie(user.id),
     )
     assert resp.status_code == 400
-    assert "end must be" in resp.json()["detail"].lower()
+    assert "end must be" in resp.json()["error"]["message"].lower()
 
 
 @pytest.mark.asyncio
@@ -68,7 +68,7 @@ async def test_reports_invalid_group_by_rejected(client: AsyncClient, db_session
         params={"start": "2026-03-01", "end": "2026-03-07", "group_by": "month"},
         cookies=_auth_cookie(user.id),
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400  # custom validation_handler in main.py converts 422 → 400
 
 
 @pytest.mark.asyncio

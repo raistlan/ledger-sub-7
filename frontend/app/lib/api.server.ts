@@ -6,7 +6,7 @@
 
 const API_BASE = process.env.BACKEND_URL ?? "http://localhost:8000";
 
-function extractCookie(cookieStr: string, name: string): string | null {
+export function extractCookie(cookieStr: string, name: string): string | null {
   const match = cookieStr.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }

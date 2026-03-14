@@ -30,9 +30,20 @@ async def _create_user_with_budget(db: AsyncSession) -> tuple[User, Budget]:
     return user, budget
 
 
+_CSRF_TOKEN = "test-csrf-token"
+
+
 def _auth_cookie(user_id: uuid.UUID) -> dict:
     token = jwt.encode({"sub": str(user_id)}, settings.JWT_SECRET, algorithm="HS256")
     return {"access_token": token}
+
+
+def _auth_cookies_with_csrf(user_id: uuid.UUID) -> dict:
+    return {**_auth_cookie(user_id), "csrf_token": _CSRF_TOKEN}
+
+
+def _csrf_header() -> dict:
+    return {"X-CSRF-Token": _CSRF_TOKEN}
 
 
 @pytest.mark.asyncio
@@ -49,7 +60,8 @@ async def test_create_entry_resolves_budget_server_side(client: AsyncClient, db_
             "date": "2026-03-01",
             "budget_id": fake_budget_id,  # should be IGNORED
         },
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 200
     data = resp.json()["data"]
@@ -62,7 +74,8 @@ async def test_create_entry_negative_amount_rejected(client: AsyncClient, db_ses
     resp = await client.post(
         "/api/v1/entries",
         json={"amount": -5.00, "type": "expense", "date": "2026-03-01"},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 400
 
@@ -73,7 +86,8 @@ async def test_create_entry_zero_amount_rejected(client: AsyncClient, db_session
     resp = await client.post(
         "/api/v1/entries",
         json={"amount": 0, "type": "expense", "date": "2026-03-01"},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 400
 
@@ -98,7 +112,8 @@ async def test_delete_entry_ownership(client: AsyncClient, db_session: AsyncSess
     # User2 tries to delete user1's entry
     resp = await client.delete(
         f"/api/v1/entries/{entry.id}",
-        cookies=_auth_cookie(user2.id),
+        cookies=_auth_cookies_with_csrf(user2.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 404
 
@@ -127,7 +142,8 @@ async def test_entry_invalid_type_rejected(client: AsyncClient, db_session: Asyn
     resp = await client.post(
         "/api/v1/entries",
         json={"amount": 10, "type": "invalid_type", "date": "2026-03-01"},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 400
 
@@ -149,7 +165,8 @@ async def test_update_entry(client: AsyncClient, db_session: AsyncSession):
     resp = await client.put(
         f"/api/v1/entries/{entry.id}",
         json={"amount": 25.00, "type": "credit"},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 200
     data = resp.json()["data"]
@@ -176,7 +193,8 @@ async def test_update_entry_ownership(client: AsyncClient, db_session: AsyncSess
     resp = await client.put(
         f"/api/v1/entries/{entry.id}",
         json={"amount": 1.00},
-        cookies=_auth_cookie(user2.id),
+        cookies=_auth_cookies_with_csrf(user2.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 404
 
@@ -198,6 +216,7 @@ async def test_update_entry_negative_amount_rejected(client: AsyncClient, db_ses
     resp = await client.put(
         f"/api/v1/entries/{entry.id}",
         json={"amount": -5.00},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code in (400, 422)

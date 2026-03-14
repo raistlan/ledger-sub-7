@@ -27,9 +27,20 @@ async def _create_user_with_budget(db: AsyncSession) -> tuple[User, Budget]:
     return user, budget
 
 
+_CSRF_TOKEN = "test-csrf-token"
+
+
 def _auth_cookie(user_id: uuid.UUID) -> dict:
     token = jwt.encode({"sub": str(user_id)}, settings.JWT_SECRET, algorithm="HS256")
     return {"access_token": token}
+
+
+def _auth_cookies_with_csrf(user_id: uuid.UUID) -> dict:
+    return {**_auth_cookie(user_id), "csrf_token": _CSRF_TOKEN}
+
+
+def _csrf_header() -> dict:
+    return {"X-CSRF-Token": _CSRF_TOKEN}
 
 
 @pytest.mark.asyncio
@@ -50,7 +61,8 @@ async def test_update_budget(client: AsyncClient, db_session: AsyncSession):
     resp = await client.put(
         "/api/v1/budget",
         json={"weekly_amount": 350.00},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code == 200
     data = resp.json()["data"]
@@ -64,7 +76,8 @@ async def test_update_budget_negative_rejected(client: AsyncClient, db_session: 
     resp = await client.put(
         "/api/v1/budget",
         json={"weekly_amount": -50},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code in (400, 422)
 
@@ -76,7 +89,8 @@ async def test_update_budget_zero_rejected(client: AsyncClient, db_session: Asyn
     resp = await client.put(
         "/api/v1/budget",
         json={"weekly_amount": 0},
-        cookies=_auth_cookie(user.id),
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
     )
     assert resp.status_code in (400, 422)
 

@@ -263,7 +263,7 @@ Future: Add entries(user_id, date) if cross-budget queries become slow.
 
 **Base URL:** `/api/v1`
 
-**Authentication:** JWT tokens from Google OAuth, passed via `Authorization: Bearer <token>` header.
+**Authentication:** JWT tokens from Google OAuth, stored in httpOnly cookies (set by the backend on OAuth callback, sent automatically by the browser on subsequent requests).
 
 ### Generic Filter Interface
 

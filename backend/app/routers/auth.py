@@ -1,12 +1,10 @@
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode
 
 import httpx
 import jwt
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from pydantic import BaseModel, field_validator
@@ -22,6 +20,14 @@ from app.models import Budget, User
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+
+class ExchangeRequest(BaseModel):
+    code: str
+    code_verifier: str
+    redirect_uri: str
+
 
 class UserUpdate(BaseModel):
     week_start_day: int | None = None
@@ -33,35 +39,11 @@ class UserUpdate(BaseModel):
             raise ValueError("week_start_day must be 0-6")
         return v
 
-GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-
 
 def _issue_jwt(user_id: uuid.UUID) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_EXPIRE_DAYS)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
-
-
-def _set_auth_cookie(response: Response, token: str) -> None:
-    is_prod = settings.ENVIRONMENT == "production"
-    max_age = settings.JWT_EXPIRE_DAYS * 24 * 60 * 60
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=is_prod,
-        samesite="lax",  # lax required: strict blocks the cookie on the post-OAuth redirect from Google
-        max_age=max_age,
-    )
-    response.set_cookie(
-        key="csrf_token",
-        value=secrets.token_urlsafe(32),
-        httponly=False,  # must be JS-readable for the Double Submit Cookie pattern
-        secure=is_prod,
-        samesite="strict",
-        max_age=max_age,
-    )
 
 
 async def _upsert_user_and_budget(
@@ -84,59 +66,34 @@ async def _upsert_user_and_budget(
         orig = str(e.orig)
         if "uq_users_google_id" not in orig and "uq_users_email" not in orig:
             raise
-        # Either unique constraint may fire first depending on Postgres index order;
-        # always look up by google_id as the canonical OAuth identifier.
         existing = await db.execute(select(User).where(User.google_id == google_sub))
         user = existing.scalar_one()
     await db.commit()
     return user
 
 
-@router.get("/login")
+@router.post("/exchange")
 @limiter.limit("10/minute")
-async def login_redirect(request: Request, response: Response):
-    """Initiate Google OAuth flow with state parameter CSRF protection."""
-    state = secrets.token_urlsafe(32)
-    params = {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-        "response_type": "code",
-        "scope": "openid email profile",
-        "state": state,
-        "access_type": "online",
-    }
-    google_url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
-    redirect = RedirectResponse(google_url)
-    redirect.set_cookie(
-        "oauth_state", state,
-        httponly=True,
-        secure=settings.ENVIRONMENT == "production",
-        samesite="lax",  # must be lax: Google's redirect back is a cross-site navigation
-        max_age=600,
-    )
-    return redirect
-
-
-@router.get("/callback")
-@limiter.limit("10/minute")
-async def google_callback(
+async def exchange_code(
     request: Request,
-    code: str,
-    state: str,
-    oauth_state: str | None = Cookie(default=None),
+    body: ExchangeRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Handle Google OAuth callback: validate state, exchange code, upsert user, issue JWT."""
-    if not oauth_state or oauth_state != state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state parameter")
+    """
+    Exchange a Google authorization code + PKCE verifier for a JWT.
 
+    Called server-to-server by the frontend SSR after it receives the OAuth
+    callback. The client_secret never leaves the backend. The frontend SSR
+    sets the returned token and csrf_token as httpOnly cookies on its own domain.
+    """
     async with httpx.AsyncClient(timeout=10.0) as client:
         token_resp = await client.post(GOOGLE_TOKEN_URL, data={
-            "code": code,
+            "code": body.code,
             "client_id": settings.GOOGLE_CLIENT_ID,
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "redirect_uri": body.redirect_uri,
             "grant_type": "authorization_code",
+            "code_verifier": body.code_verifier,
         })
         if token_resp.status_code != 200:
             raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
@@ -161,11 +118,12 @@ async def google_callback(
 
     user = await _upsert_user_and_budget(db, google_sub, email, name)
 
-    jwt_token = _issue_jwt(user.id)
-    redirect = RedirectResponse(settings.FRONTEND_URL + "/", status_code=302)
-    _set_auth_cookie(redirect, jwt_token)
-    redirect.delete_cookie("oauth_state")
-    return redirect
+    return {
+        "data": {
+            "token": _issue_jwt(user.id),
+            "csrf_token": secrets.token_urlsafe(32),
+        }
+    }
 
 
 @router.get("/me")

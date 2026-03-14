@@ -86,7 +86,7 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
 
       {/* Sign In Button — links to backend OAuth initiation */}
       <a
-        href="/api/v1/auth/login"
+        href="/auth/login"
         onMouseDown={() => setPressed(true)}
         onMouseUp={() => setPressed(false)}
         onMouseLeave={() => setPressed(false)}
