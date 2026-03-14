@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, Suspense } from "react";
-import { useNavigation, useNavigate, useSubmit } from "react-router";
+import { useNavigation, useNavigate, useSubmit, redirect } from "react-router";
 import { Await } from "react-router";
 import type { Route } from "./+types/home";
 import { C, font, raisedBorder, sunkenBorder } from "~/utils/win95";
@@ -36,10 +36,20 @@ export async function loader({ request }: Route.LoaderArgs) {
   const today = getLocalDateFromCookie(cookie);
 
   // Parallel: user and budget don't depend on each other
-  const [user, budget] = await Promise.all([
-    api.get<User>("/auth/me"),
-    api.get<Budget>("/budget"),
-  ]);
+  let user: User;
+  let budget: Budget;
+  try {
+    [user, budget] = await Promise.all([
+      api.get<User>("/auth/me"),
+      api.get<Budget>("/budget"),
+    ]);
+  } catch (e) {
+    if (e instanceof Response && e.status === 401) {
+      const url = new URL(request.url);
+      throw redirect(`/login?redirectTo=${encodeURIComponent(url.pathname)}`);
+    }
+    throw e;
+  }
 
   const weekStart = getWeekStart(today, user.week_start_day);
   const weekEnd = getWeekEnd(today, user.week_start_day);
