@@ -25,7 +25,7 @@ export const PipBar = memo(function PipBar({ percentage, overBudget }: PipBarPro
         if (!isFilled) {
           bgColor = "#1a1a1a";
         } else if (isOverBudget) {
-          bgColor = getOverBudgetPipColor(i);
+          bgColor = getOverBudgetPipColor(i, Math.max(0, percentage - 100));
         } else {
           bgColor = getNormalPipColor(i);
         }

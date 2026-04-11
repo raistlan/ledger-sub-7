@@ -268,7 +268,7 @@ export function HomeEntriesSection({
             </div>
             <div style={{ color: C.textMuted, fontSize: 17, marginTop: 2 }}>
               <span style={{ color: overBudget ? "#cc4444" : C.text }}>
-                {overBudget ? "OVER" : `${pct}%`}
+                {`${pct}%`}
               </span>
               {"  •  "}
               <span>{daysLeft} DAYS LEFT</span>
