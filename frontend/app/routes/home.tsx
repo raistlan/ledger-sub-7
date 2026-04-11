@@ -102,7 +102,7 @@ export async function action({ request }: Route.ActionArgs) {
     await api.put(`/entries/${entryId}`, {
       amount,
       type: formData.get("type"),
-      memo: formData.get("memo") || null,
+      memo: formData.get("memo"),
       date: formData.get("date"),
     });
     return { ok: true };
@@ -500,7 +500,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
   }
 
   function handleEditCancel() {
-    editDialog.close();
+    editDialog.cancel();
     setDialogPhase("none");
   }
 

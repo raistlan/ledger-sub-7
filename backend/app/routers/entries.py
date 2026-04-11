@@ -151,8 +151,8 @@ async def update_entry(
     if body.type is not None:
         entry.type = body.type
 
-    if body.memo is not None:
-        entry.memo = body.memo
+    if "memo" in body.model_fields_set:
+        entry.memo = body.memo or None
 
     if body.date is not None:
         entry.date = body.date

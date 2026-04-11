@@ -220,3 +220,80 @@ async def test_update_entry_negative_amount_rejected(client: AsyncClient, db_ses
         headers=_csrf_header(),
     )
     assert resp.status_code in (400, 422)
+
+
+@pytest.mark.asyncio
+async def test_update_entry_memo_change(client: AsyncClient, db_session: AsyncSession):
+    """PUT /entries/{id} — updating memo to a new value."""
+    user, budget = await _create_user_with_budget(db_session)
+    entry = Entry(
+        user_id=user.id,
+        budget_id=budget.id,
+        amount=10.00,
+        type="expense",
+        memo="old memo",
+        date=date(2026, 3, 1),
+    )
+    db_session.add(entry)
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/entries/{entry.id}",
+        json={"memo": "new memo"},
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["data"]["memo"] == "new memo"
+
+
+@pytest.mark.asyncio
+async def test_update_entry_memo_clear(client: AsyncClient, db_session: AsyncSession):
+    """PUT /entries/{id} — clearing memo with empty string sets it to null."""
+    user, budget = await _create_user_with_budget(db_session)
+    entry = Entry(
+        user_id=user.id,
+        budget_id=budget.id,
+        amount=10.00,
+        type="expense",
+        memo="has a memo",
+        date=date(2026, 3, 1),
+    )
+    db_session.add(entry)
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/entries/{entry.id}",
+        json={"memo": ""},
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["data"]["memo"] is None
+
+
+@pytest.mark.asyncio
+async def test_update_entry_omitting_memo_preserves_it(client: AsyncClient, db_session: AsyncSession):
+    """PUT /entries/{id} — partial update omitting memo leaves it unchanged."""
+    user, budget = await _create_user_with_budget(db_session)
+    entry = Entry(
+        user_id=user.id,
+        budget_id=budget.id,
+        amount=10.00,
+        type="expense",
+        memo="keep this",
+        date=date(2026, 3, 1),
+    )
+    db_session.add(entry)
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/entries/{entry.id}",
+        json={"amount": 20.00},
+        cookies=_auth_cookies_with_csrf(user.id),
+        headers=_csrf_header(),
+    )
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["amount"] == 20.0
+    assert data["memo"] == "keep this"

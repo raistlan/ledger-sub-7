@@ -12,7 +12,7 @@ export function useEditEntryDialog() {
     setEditingEntry(entry);
   }
 
-  function close() {
+  function cancel() {
     setEditingEntry(null);
     fetcher.reset();
   }
@@ -27,8 +27,8 @@ export function useEditEntryDialog() {
     form.set("memo", updates.memo);
     form.set("date", editingEntry.date);
     fetcher.submit(form, { method: "post" });
-    close();
+    setEditingEntry(null);
   }
 
-  return { editingEntry, isOpen, open, close, save, fetcher };
+  return { editingEntry, isOpen, open, cancel, save, fetcher };
 }
