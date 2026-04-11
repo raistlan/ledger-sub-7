@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    MetaData,
     Numeric,
     String,
     Text,
@@ -21,7 +22,7 @@ from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData(schema="public")
 
 
 class User(Base):
