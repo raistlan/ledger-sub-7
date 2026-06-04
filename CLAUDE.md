@@ -9,7 +9,7 @@ This file provides guidance to Claude Code when working in this repository. Thes
 **Ledger Sub 7 (L₇)** is a retro Win95-styled weekly budget tracker. Log expenses/credits, watch a pip bar fill up, review historical spend reports. Dark-mode, monospace aesthetic throughout.
 
 - **Frontend:** React Router v7 (SSR) + Vite + TypeScript + TailwindCSS v4
-- **Backend:** FastAPI + SQLAlchemy (asyncio) + Alembic + PostgreSQL 16
+- **Backend:** FastAPI + SQLAlchemy (asyncio) + Alembic + PostgreSQL 18 (prod on Neon; local dev runs PostgreSQL 16 via docker-compose)
 - **Auth:** Google OAuth 2.0 + JWT httpOnly cookies
 - **Deployment:** Railway (two separate services — frontend Node.js, backend Python)
 - **Mobile:** PWA (Progressive Web App)

@@ -1,0 +1,56 @@
+# Render Blueprint — L₇ (Ledger Sub 7)
+# Two free web services. The database is NOT defined here: it stays on the
+# existing Neon project. Deploy via Render dashboard → "New +" → "Blueprint",
+# point it at this repo.
+#
+# After the FIRST deploy, fill in the `sync: false` env vars in the dashboard:
+#   - secrets (DATABASE_URL, GOOGLE_*, JWT_SECRET) — never commit these
+#   - the cross-service URLs (FRONTEND_URL / BACKEND_URL) once both
+#     *.onrender.com URLs are known, then redeploy both services.
+
+services:
+  # ---- FastAPI backend (Python) ----
+  - type: web
+    name: l7-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: "pip install -r requirements.txt && alembic upgrade head"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: ENVIRONMENT
+        value: production
+      - key: JWT_EXPIRE_DAYS
+        value: "14"
+      # --- fill in dashboard (secrets) ---
+      - key: DATABASE_URL        # reuse the exact Neon string that worked on Railway
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      # --- fill in after frontend URL is known ---
+      - key: FRONTEND_URL        # https://l7-frontend.onrender.com
+        sync: false
+
+  # ---- React Router v7 SSR frontend (Node) ----
+  - type: web
+    name: l7-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    region: oregon
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start"
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # --- fill in after backend URL is known ---
+      - key: BACKEND_URL         # https://l7-backend.onrender.com
+        sync: false
