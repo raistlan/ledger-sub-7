@@ -16,6 +16,13 @@ import "./styles/fonts.css";
 import { C, font, raisedBorder, sunkenBorder, crtOverlay } from "~/utils/win95";
 
 export const links: Route.LinksFunction = () => [
+  {
+    rel: "preload",
+    href: "/fonts/VT323-Regular.woff2",
+    as: "font",
+    type: "font/woff2",
+    crossOrigin: "anonymous",
+  },
   { rel: "manifest", href: "/manifest.json" },
   { rel: "icon", href: "/icons/icon-192.png" },
 ];

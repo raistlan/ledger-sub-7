@@ -51,6 +51,14 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: NODE_ENV
+        value: production
+      # The frontend SSR builds the Google OAuth URL itself, so it needs the
+      # client ID and redirect URI (NOT just the backend).
+      - key: GOOGLE_CLIENT_ID    # same value as the backend service
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://ledgersub7.raistlanschade.com/auth/callback
       # --- fill in after backend URL is known ---
       - key: BACKEND_URL         # https://l7-backend.onrender.com
         sync: false
