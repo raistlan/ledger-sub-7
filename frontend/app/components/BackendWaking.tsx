@@ -1,38 +1,60 @@
-import { useEffect, useState } from "react";
-import { C, font, raisedBorder, sunkenBorder } from "~/utils/win95";
-import { useWakeBackend } from "~/hooks/useWakeBackend";
+import { useEffect, useRef, useState } from "react";
+import {
+  C,
+  font,
+  raisedBorder,
+  sunkenBorder,
+  progressBlocks,
+} from "~/utils/win95";
+import {
+  useWakeBackend,
+  type WakeBackendOptions,
+} from "~/hooks/useWakeBackend";
+
+/** Total segments in the Win95-style progress bar. */
+const BLOCK_COUNT = 20;
+/** How often we advance the fill animation (ms). */
+const TICK_MS = 100;
 
 /**
  * Shown by the root ErrorBoundary when a loader hit a sleeping (502/503/504)
  * Render free-tier backend. Drives a browser-side wake (useWakeBackend) and,
  * on success, revalidates so the real page replaces this screen.
  */
-export function BackendWaking() {
-  const { status, attempts, retry } = useWakeBackend();
-  const [dots, setDots] = useState(".");
+export function BackendWaking({
+  options,
+}: { options?: WakeBackendOptions } = {}) {
+  const { status, attempts, retry, attemptTimeoutMs } = useWakeBackend(options);
+
+  const [fill, setFill] = useState(0);
+  const attemptStart = useRef(Date.now());
+
+  // New attempt → reset the bar to empty and restart the fill clock.
+  useEffect(() => {
+    attemptStart.current = Date.now();
+    setFill(0);
+  }, [attempts]);
 
   useEffect(() => {
     if (status !== "waking") return;
-    const id = setInterval(
-      () => setDots((d) => (d.length >= 3 ? "." : d + ".")),
-      400,
-    );
+    const id = setInterval(() => {
+      const elapsed = Date.now() - attemptStart.current;
+      setFill(Math.min(elapsed / attemptTimeoutMs, 1));
+    }, TICK_MS);
     return () => clearInterval(id);
-  }, [status]);
+  }, [status, attemptTimeoutMs]);
 
-  const heading =
-    status === "timeout"
-      ? "STILL SLEEPING"
-      : status === "recovered"
-        ? "READY"
-        : "WAKING SERVER";
+  const isTimeout = status === "timeout";
+  const heading = isTimeout
+    ? "STILL SLEEPING"
+    : status === "recovered"
+      ? "READY"
+      : "WAKING SERVER";
 
-  const message =
-    status === "timeout"
-      ? "The server is taking longer than usual to wake up."
-      : status === "recovered"
-        ? "Loading your ledger…"
-        : "The server dozed off after some quiet time (free hosting). Booting it back up — this can take up to a minute.";
+  const displayFill = status === "waking" ? fill : 1;
+  const filled = progressBlocks(displayFill, BLOCK_COUNT);
+  const blockColor = isTimeout ? "#cc4444" : C.cyan;
+  const accent = isTimeout ? "#cc4444" : C.cyan;
 
   return (
     <div
@@ -64,76 +86,33 @@ export function BackendWaking() {
             fontSize: 28,
             letterSpacing: "0.06em",
             marginBottom: 18,
-            color: status === "timeout" ? "#cc4444" : C.cyan,
+            color: accent,
           }}
         >
           {heading}
-          {status === "waking" ? dots : ""}
         </div>
 
         <div
           style={{
-            fontSize: 18,
-            color: C.textMuted,
-            lineHeight: 1.5,
-            marginBottom: 22,
+            ...sunkenBorder,
+            backgroundColor: C.bg,
+            display: "flex",
+            gap: 2,
+            padding: 3,
+            height: 22,
+            boxSizing: "border-box",
           }}
         >
-          {message}
+          {Array.from({ length: BLOCK_COUNT }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                backgroundColor: i < filled ? blockColor : "transparent",
+              }}
+            />
+          ))}
         </div>
-
-        {status === "waking" && (
-          <div
-            style={{
-              ...sunkenBorder,
-              padding: "4px 8px",
-              fontSize: 14,
-              color: C.textMuted,
-            }}
-          >
-            attempt {attempts} — please wait
-          </div>
-        )}
-
-        {status === "timeout" && (
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              type="button"
-              onClick={retry}
-              style={{
-                ...raisedBorder(false),
-                backgroundColor: C.surface,
-                color: C.text,
-                fontFamily: font,
-                fontSize: 18,
-                letterSpacing: "0.06em",
-                padding: "8px 24px",
-                cursor: "pointer",
-              }}
-            >
-              [ RETRY ]
-            </button>
-            <a
-              href="/"
-              style={{
-                color: C.cyan,
-                fontSize: 18,
-                textDecoration: "underline",
-                fontFamily: font,
-                alignSelf: "center",
-              }}
-            >
-              [ RETURN HOME ]
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );

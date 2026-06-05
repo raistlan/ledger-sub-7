@@ -56,6 +56,16 @@ export function lerp(a: number, b: number, t: number): number {
   return Math.round(a + (b - a) * t);
 }
 
+/**
+ * How many discrete blocks of a Win95 segmented progress bar are filled.
+ * @param fill  progress 0–1 (clamped)
+ * @param total total number of blocks in the bar
+ */
+export function progressBlocks(fill: number, total: number): number {
+  const clamped = Math.min(Math.max(fill, 0), 1);
+  return Math.round(clamped * total);
+}
+
 /** Normal pip color (0-indexed, 0–19) */
 export function getNormalPipColor(i: number): string {
   if (i <= 10) {

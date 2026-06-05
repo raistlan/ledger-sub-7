@@ -37,16 +37,21 @@ export interface WakeBackendOptions {
   reloadFallbackMs?: number;
 }
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Default probe: read the backend's public /health and confirm a real JSON 200. */
 async function defaultProbe(signal: AbortSignal): Promise<boolean> {
   const base = getBackendUrl();
   if (!base) return false;
-  const res = await fetch(`${base}${HEALTH_PATH}`, { signal, cache: "no-store" });
+  const res = await fetch(`${base}${HEALTH_PATH}`, {
+    signal,
+    cache: "no-store",
+  });
   if (!res.ok) return false;
   // Render's spin-up "loading" page is HTML — only a JSON body is the real app.
-  if (!(res.headers.get("content-type") ?? "").includes("application/json")) return false;
+  if (!(res.headers.get("content-type") ?? "").includes("application/json"))
+    return false;
   const body = await res.json().catch(() => null);
   return body?.status === "ok";
 }
@@ -55,6 +60,7 @@ export function useWakeBackend(options: WakeBackendOptions = {}): {
   status: WakeStatus;
   attempts: number;
   retry: () => void;
+  attemptTimeoutMs: number;
 } {
   const {
     probe = defaultProbe,
@@ -96,7 +102,8 @@ export function useWakeBackend(options: WakeBackendOptions = {}): {
           setStatus("recovered");
           revalidator.revalidate();
           reloadTimer.current = setTimeout(() => {
-            if (!cancelled && typeof window !== "undefined") window.location.reload();
+            if (!cancelled && typeof window !== "undefined")
+              window.location.reload();
           }, reloadFallbackMs);
           return;
         }
@@ -114,5 +121,5 @@ export function useWakeBackend(options: WakeBackendOptions = {}): {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nonce]);
 
-  return { status, attempts, retry };
+  return { status, attempts, retry, attemptTimeoutMs };
 }

@@ -1,4 +1,9 @@
-import { lerp, getNormalPipColor, getOverBudgetPipColor } from "./win95";
+import {
+  lerp,
+  getNormalPipColor,
+  getOverBudgetPipColor,
+  progressBlocks,
+} from "./win95";
 
 describe("lerp", () => {
   it("returns start value at t=0", () => {
@@ -64,6 +69,37 @@ describe("getNormalPipColor", () => {
   it("pip 16 phase 3 boundary matches pip 15 phase 2 end", () => {
     // t=(16-16)/3=0 → rgb(lerp(204,160,0), lerp(60,0,0), 0) = rgb(204,60,0)
     expect(getNormalPipColor(16)).toBe("rgb(204,60,0)");
+  });
+});
+
+describe("progressBlocks", () => {
+  it("is empty at fill 0", () => {
+    expect(progressBlocks(0, 20)).toBe(0);
+  });
+
+  it("is full at fill 1", () => {
+    expect(progressBlocks(1, 20)).toBe(20);
+  });
+
+  it("rounds to the nearest whole block", () => {
+    expect(progressBlocks(0.5, 20)).toBe(10);
+    expect(progressBlocks(0.49, 20)).toBe(10); // 9.8 → 10
+    expect(progressBlocks(0.51, 20)).toBe(10); // 10.2 → 10
+  });
+
+  it("clamps fill below 0 to empty", () => {
+    expect(progressBlocks(-0.5, 20)).toBe(0);
+  });
+
+  it("clamps fill above 1 to full", () => {
+    expect(progressBlocks(1.5, 20)).toBe(20);
+  });
+
+  it("never exceeds the total block count", () => {
+    for (let f = 0; f <= 1.2; f += 0.13) {
+      expect(progressBlocks(f, 18)).toBeLessThanOrEqual(18);
+      expect(progressBlocks(f, 18)).toBeGreaterThanOrEqual(0);
+    }
   });
 });
 
