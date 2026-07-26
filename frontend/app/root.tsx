@@ -14,7 +14,6 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import "./styles/fonts.css";
 import { C, font, raisedBorder, sunkenBorder, crtOverlay } from "~/utils/win95";
-import { BackendWaking } from "~/components/BackendWaking";
 
 export const links: Route.LinksFunction = () => [
   {
@@ -197,10 +196,6 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         location.pathname + location.search,
       );
       return <Navigate to={`/login?redirectTo=${redirectTo}`} replace />;
-    }
-    if (error.status === 502 || error.status === 503 || error.status === 504) {
-      // Backend asleep (Render free-tier spin-down) — wake it from the browser.
-      return <BackendWaking />;
     }
     message = error.status === 404 ? "404 NOT FOUND" : `ERROR ${error.status}`;
     details =
