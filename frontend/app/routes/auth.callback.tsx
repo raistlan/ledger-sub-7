@@ -1,12 +1,11 @@
-import { type LoaderFunctionArgs } from "react-router";
+import type { Route } from "./+types/auth.callback";
 import { extractCookie } from "~/lib/api.server";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
 const MAX_AGE = 14 * 24 * 60 * 60; // 14 days in seconds
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  const url = new URL(request.url);
+export async function loader({ request, url }: Route.LoaderArgs) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
 

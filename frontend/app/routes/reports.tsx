@@ -15,10 +15,10 @@ export function meta() {
   return [{ title: "L₇ — Reports" }];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, url }: Route.LoaderArgs) {
   const cookie = request.headers.get("Cookie") ?? "";
   const api = new ApiClient(cookie);
-  const params = new URL(request.url).searchParams;
+  const params = url.searchParams;
 
   if (hasExplicitRange(params)) {
     // Both bounds are pinned, so the defaults below are never consulted.

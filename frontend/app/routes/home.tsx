@@ -31,7 +31,7 @@ export function meta() {
   return [{ title: "Ledger Sub 7" }];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, url }: Route.LoaderArgs) {
   const cookie = request.headers.get("Cookie") ?? "";
   const api = new ApiClient(cookie);
   const today = getLocalDateFromCookie(cookie);
@@ -46,7 +46,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     ]);
   } catch (e) {
     if (e instanceof Response && e.status === 401) {
-      const url = new URL(request.url);
       throw redirect(buildLoginRedirect(url.pathname));
     }
     throw e;
