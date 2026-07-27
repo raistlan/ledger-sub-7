@@ -155,34 +155,39 @@ export function ViewportDebug() {
     />
   );
 
-  if (!readings) return probe;
-
-  // Case (b): the document genuinely scrolls — 100vh overshoots the real viewport.
-  // Case (a): nothing scrolls, so the row must be covered by system UI.
-  const verdict =
-    readings.maxScrollY > 0.5
+  // NOTE: this box renders even before any reading exists, so that "I see no
+  // overlay" unambiguously means "wrong server / wrong build" rather than
+  // "JS didn't hydrate".
+  const verdict = !readings
+    ? "waiting for JS…"
+    : // Case (b): the document genuinely scrolls — 100vh overshoots the viewport.
+      // Case (a): nothing scrolls, so the row must be covered by system UI.
+      readings.maxScrollY > 0.5
       ? "B — document scrolls"
       : readings.overflow > 0.5
         ? "B — overflow exists (scroll to confirm)"
         : "A so far — no overflow";
 
+  const n = (v: number | null | undefined, suffix = "") =>
+    !readings ? "…" : v == null ? "n/a" : v.toFixed(1) + suffix;
+
   const rows: Array<[string, string]> = [
-    ["MAX scrollY", `${readings.maxScrollY.toFixed(1)}  ← decisive`],
-    ["scrollY now", readings.scrollY.toFixed(1)],
-    ["overflow", readings.overflow.toFixed(1)],
-    ["innerHeight", readings.innerHeight.toFixed(1)],
-    ["client/doc h", readings.clientHeight.toFixed(1)],
-    ["visualVP h", readings.visualHeight?.toFixed(1) ?? "n/a"],
-    ["scrollHeight", readings.scrollHeight.toFixed(1)],
-    ["100vh", readings.vh.toFixed(1)],
-    ["100svh", readings.svh.toFixed(1)],
-    ["100lvh", readings.lvh.toFixed(1)],
-    ["100dvh", readings.dvh.toFixed(1)],
-    ["inset top", readings.insetTop.toFixed(1)],
-    ["inset bottom", readings.insetBottom.toFixed(1)],
-    ["viewport-fit", readings.viewportFit],
-    ["standalone", String(readings.standalone)],
-    ["dpr", String(readings.dpr)],
+    ["MAX scrollY", n(readings?.maxScrollY, "  ←")],
+    ["scrollY now", n(readings?.scrollY)],
+    ["overflow", n(readings?.overflow)],
+    ["innerHeight", n(readings?.innerHeight)],
+    ["client/doc h", n(readings?.clientHeight)],
+    ["visualVP h", n(readings?.visualHeight)],
+    ["scrollHeight", n(readings?.scrollHeight)],
+    ["100vh", n(readings?.vh)],
+    ["100svh", n(readings?.svh)],
+    ["100lvh", n(readings?.lvh)],
+    ["100dvh", n(readings?.dvh)],
+    ["inset top", n(readings?.insetTop)],
+    ["inset bottom", n(readings?.insetBottom)],
+    ["viewport-fit", readings?.viewportFit ?? "…"],
+    ["standalone", readings ? String(readings.standalone) : "…"],
+    ["dpr", readings ? String(readings.dpr) : "…"],
   ];
 
   return (
@@ -195,8 +200,8 @@ export function ViewportDebug() {
           top: 4,
           left: 4,
           zIndex: 100000,
-          backgroundColor: "rgba(0,0,0,0.88)",
-          border: `1px solid ${C.borderMid}`,
+          backgroundColor: "rgba(0,0,0,0.9)",
+          border: "2px solid #ff00ff",
           color: C.text,
           fontFamily: font,
           fontSize: 13,
@@ -208,11 +213,11 @@ export function ViewportDebug() {
         }}
       >
         {collapsed ? (
-          <div>VP ▸ {readings.maxScrollY.toFixed(0)}</div>
+          <div>VP ▸ {readings ? readings.maxScrollY.toFixed(0) : "…"}</div>
         ) : (
           <>
-            <div style={{ color: C.cyan, marginBottom: 2 }}>
-              VIEWPORT DEBUG ▾
+            <div style={{ color: "#ff00ff", marginBottom: 2 }}>
+              VIEWPORT DEBUG v2 ▾
             </div>
             {rows.map(([label, value]) => (
               <div
