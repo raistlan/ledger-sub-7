@@ -14,6 +14,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import "./styles/fonts.css";
 import { C, font, raisedBorder, sunkenBorder, crtOverlay } from "~/utils/win95";
+import { ViewportDebug } from "~/components/ViewportDebug";
 
 export const links: Route.LinksFunction = () => [
   {
@@ -155,6 +156,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
+
+          {/* TEMPORARY — remove with the ViewportDebug component before merging */}
+          <ViewportDebug />
 
           <ScrollRestoration />
           <Scripts />
