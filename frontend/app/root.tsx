@@ -43,7 +43,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* viewport-fit=cover makes env(safe-area-inset-*) report real values so
+            the shell can keep content clear of the Android gesture bar / iOS home
+            indicator. It MUST ship with the insets in app.css — on its own it
+            extends the viewport under system UI and makes clipping worse. */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <meta name="theme-color" content="#000080" />
         <Meta />
         <Links />
