@@ -137,41 +137,6 @@ Each commit should do one thing. A migration, a router change, a component extra
 
 ---
 
-## Project Structure
-
-```
-ledger-sub-7/
-├── docker-compose.yml       # Local PostgreSQL (host port 5433)
-├── docs/
-│   ├── PLANNING.md          # ADRs and architectural decisions (authoritative)
-│   ├── PORTING_PLAN.md      # UI porting guide from Figma prototype
-│   ├── plans/               # Per-task plan files (YYYY-MM-DD-type-slug.md)
-│   └── todos/               # Granular todo items (NNN-status-priority-slug.md)
-├── backend/
-│   ├── app/
-│   │   ├── main.py          # FastAPI entry, middleware, router registration
-│   │   ├── config.py        # pydantic-settings (reads .env)
-│   │   ├── database.py      # Async engine + session factory
-│   │   ├── models.py        # SQLAlchemy ORM: User, Budget, Entry
-│   │   ├── dependencies.py  # Auth dependency (get_current_user)
-│   │   ├── limiter.py       # slowapi rate limiting
-│   │   └── routers/         # One file per resource: auth, entries, budget, reports
-│   ├── modules/             # Domain logic separated from the HTTP layer
-│   ├── alembic/             # Migration scripts
-│   ├── tests/               # pytest async test suite
-│   └── requirements.txt
-└── frontend/
-    └── app/
-        ├── routes/          # Route components (loaders, actions, UI)
-        ├── components/      # Reusable UI components
-        ├── hooks/           # Custom React hooks
-        ├── lib/             # Server-side fetch client
-        ├── types/           # Shared TypeScript types
-        └── utils/           # Pure utilities (calculator, fmt, weeks, win95)
-```
-
----
-
 ## Architecture Notes
 
 ### Frontend Patterns

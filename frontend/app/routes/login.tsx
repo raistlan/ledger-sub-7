@@ -4,8 +4,7 @@ import type { Route } from "./+types/login";
 import { C, font, raisedBorder } from "~/utils/win95";
 import { ApiClient } from "~/lib/api.server";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url);
+export async function loader({ request, url }: Route.LoaderArgs) {
   const redirectTo = url.searchParams.get("redirectTo") ?? "/";
   const error = url.searchParams.get("error");
 
