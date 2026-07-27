@@ -52,6 +52,19 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+
+  /* Keep content clear of system UI — the Android gesture bar, the iOS home
+     indicator, display cutouts. Applied once here so every route inherits it;
+     no component needs to know about insets.
+
+     Requires viewport-fit=cover in the viewport meta (root.tsx). Resolves to 0
+     wherever there is no system UI to avoid, so desktop is unaffected. Combined
+     with box-sizing: border-box this shrinks the flex content area rather than
+     growing the box, so the panel still fills exactly one viewport. */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
 }
 
 /* ── Desktop breakpoint ──────────────────────────────────────── */
