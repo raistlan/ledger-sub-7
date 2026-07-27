@@ -21,6 +21,7 @@ import {
 import { W95Btn } from "~/components/W95Btn";
 import { EditEntryDialog } from "~/components/EditEntryDialog";
 import { useEditEntryDialog } from "~/hooks/useEditEntryDialog";
+import { buildLoginRedirect } from "~/utils/redirects";
 import { ApiClient, getLocalDateFromCookie } from "~/lib/api.server";
 import { useLocalToday } from "~/hooks/useLocalToday";
 import type { Entry, Budget, User } from "~/types/api";
@@ -46,7 +47,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   } catch (e) {
     if (e instanceof Response && e.status === 401) {
       const url = new URL(request.url);
-      throw redirect(`/login?redirectTo=${encodeURIComponent(url.pathname)}`);
+      throw redirect(buildLoginRedirect(url.pathname));
     }
     throw e;
   }

@@ -6,6 +6,7 @@ import { fmt } from "~/utils/fmt";
 import { getWeekStart, getWeekEnd, toISODate } from "~/utils/weeks";
 import { ReportEntryRow } from "~/components/EntryRow";
 import { W95Btn } from "~/components/W95Btn";
+import { hasExplicitRange, buildSummaryPath } from "~/utils/reportParams";
 import { ApiClient, getLocalDateFromCookie } from "~/lib/api.server";
 import { useLocalToday } from "~/hooks/useLocalToday";
 import type { User, Budget, ReportSummary, WeekStartDay } from "~/types/api";
@@ -18,12 +19,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   const cookie = request.headers.get("Cookie") ?? "";
   const api = new ApiClient(cookie);
   const params = new URL(request.url).searchParams;
-  const hasExplicitRange = params.has("start") && params.has("end");
 
-  if (hasExplicitRange) {
+  if (hasExplicitRange(params)) {
+    // Both bounds are pinned, so the defaults below are never consulted.
     const [meResult, summaryResult] = await Promise.all([
       api.get<User>("/auth/me"),
-      api.get<ReportSummary>(`/reports/summary?${params.toString()}`),
+      api.get<ReportSummary>(
+        buildSummaryPath(params, {
+          start: params.get("start")!,
+          end: params.get("end")!,
+        }),
+      ),
     ]);
 
     return {
@@ -39,14 +45,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const weekStart = getWeekStart(today, user.week_start_day);
   const weekEnd = getWeekEnd(today, user.week_start_day);
 
-  const defaultStart = params.get("start") ?? toISODate(weekStart);
-  const defaultEnd = params.get("end") ?? toISODate(weekEnd);
-  const groupBy = params.get("group_by") ?? undefined;
-
-  let summaryPath = `/reports/summary?start=${defaultStart}&end=${defaultEnd}`;
-  if (groupBy) summaryPath += `&group_by=${groupBy}`;
-
-  const summary = await api.get<ReportSummary>(summaryPath);
+  const summary = await api.get<ReportSummary>(
+    buildSummaryPath(params, {
+      start: toISODate(weekStart),
+      end: toISODate(weekEnd),
+    }),
+  );
 
   return { user, summary };
 }
