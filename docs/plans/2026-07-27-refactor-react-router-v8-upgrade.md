@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-27
 **Type:** refactor
-**Status:** proposed
+**Status:** complete — pending manual smoke test (branch `chore/react-router-v8`)
 
 ---
 
@@ -123,11 +123,31 @@ moves. The current loaders have no direct tests.
 
 ## Acceptance Criteria
 
-- [ ] `npm run typecheck` passes at each step
-- [ ] `npm test` passes at each step; new helper tests included
-- [ ] `npm run build` passes with **zero** `Future Flag Warning` lines
-- [ ] `npm audit` reports **no** `react-router` advisories
+- [x] `npm run typecheck` passes at each step
+- [x] `npm test` passes at each step; new helper tests included
+      (7 suites / 75 tests → 9 suites / 89 tests)
+- [x] `npm run build` passes with **zero** `Future Flag Warning` lines
+- [x] `npm audit` reports **no** `react-router` advisories
 - [ ] Manual smoke test against a running backend: Google login round-trip,
       logging an expense, the reports screen with an explicit date range, and a
-      401 → login redirect preserving `redirectTo`
-- [ ] One commit per step, each independently green
+      401 → login redirect preserving `redirectTo` — **owner: user**
+- [x] One commit per step, each independently green
+
+## Outcome Notes
+
+- **Flag warnings collapsed early.** After adopting `v8_passThroughRequests` the
+  build dropped to zero warnings, before `v8_trailingSlashAwareDataRequests` was
+  set — the latter's warning appears to be subsumed by the former. The flag was
+  still adopted explicitly, and `satisfies Config` accepted it, so it is a real
+  key and the semantics were opted into deliberately rather than by default.
+- **npm resolver deadlock, twice.** Both the 7.18.1 and 8.3.0 bumps failed with
+  `ERESOLVE` against the stale pinned lockfile entries, even with an explicit
+  `npm install <pkg>@<version>` and after clearing `node_modules/@react-router`.
+  Both needed `rm -rf node_modules package-lock.json` and a full reinstall. Worth
+  expecting on the next pinned-dependency major.
+- **Boot check beyond the build.** `npm start` was run against the v8 build and
+  `GET /login` returned 200 with SSR markup, confirming `@react-router/serve` v8
+  boots and renders. This does not replace the backend-dependent smoke test.
+- **Remaining audit findings:** 20 high, all in the `jest` / `brace-expansion`
+  dev chain. Untouched on purpose — dev-only, and the only published fix is
+  `brace-expansion` 5.0.8 with no backport to the installed 1.x/2.x lines.
